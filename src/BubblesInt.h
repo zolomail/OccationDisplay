@@ -24,11 +24,7 @@ class BubblesInt : public Effect
 {
 public:
 	BubblesInt(Adafruit_GFX &matrix, int16_t count=20);
-	void render();
-	void drawFragment(float x1, float x2, uint8_t y, float rr, float re, float bx, float by);
-	void drawFragmentB(float x1, float x2, uint8_t y, float rr, float re, float bx, float by, float br);
-	void drawCircleAntialized(float cx, float cy, float cr);
-	void fillCircleAntialized(float cx, float cy, float cr);
+	void render() override;
 
 private:
 	std::vector<BubbleInt> m_bubbles;
