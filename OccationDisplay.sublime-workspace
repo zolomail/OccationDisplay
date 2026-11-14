@@ -9,18 +9,15 @@
 	[
 		{
 			"file": "src/main.cpp",
-			"file_size": 18150,
-			"file_write_time": 134391612458516250,
+			"file_size": 21911,
+			"file_write_time": 134391666517794506,
 			"settings":
 			{
-				"buffer_size": 17627,
+				"buffer_size": 21911,
 				"encoding": "UTF-8",
-				"line_ending": "Windows",
+				"line_ending": "Unix",
 				"name": "#include <Arduino.h>"
-			},
-			"undo_stack":
-			[
-			]
+			}
 		},
 		{
 			"contents": "\n\n[env:esp32-s3-supermini]\nplatform = espressif32\nboard = lolin_s3_mini\nframework = arduino\nmonitor_speed = 115200\nmonitor_filters = esp32_exception_decoder\n\n; Serial / CDC Configuration for ESP32-S3 native USB\nbuild_flags = \n    -D ARDUINO_USB_CDC_ON_BOOT=1\n    -D BOARD_HAS_PSRAM\n#    -D ARDUINO_USB_MODE=1\n#    -mfix-esp32-psram-cache-issue\n#board_build.arduino.memory_type = qio_qspi\n\n\nlib_deps =\n    mrfaptastic/ESP32 HUB75 LED MATRIX PANEL DMA Display@^3.0.12\n    adafruit/Adafruit GFX Library@^1.11.9\n",
@@ -37,7 +34,7 @@
 					"paste",
 					null,
 					"AQAAAAAAAAAAAAAAAQAAAAAAAAAAAAAA",
-					"AgAAAAAAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAPC/AAAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA8L8"
+					"AwAAAAAAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAPC/AAAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA8L8AAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADwvw"
 				],
 				[
 					4,
@@ -45,7 +42,7 @@
 					"paste",
 					null,
 					"AQAAAAEAAAAAAAAAAgAAAAAAAAAAAAAA",
-					"AgAAAAAAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAPC/AAAAAAEAAAABAAAAAAAAAAEAAAAAAAAAAAAAAAAA8L8"
+					"AwAAAAAAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAPC/AAAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA8L8AAAAAAQAAAAEAAAAAAAAAAQAAAAAAAAAAAAAAAADwvw"
 				],
 				[
 					5,
@@ -53,7 +50,7 @@
 					"paste",
 					null,
 					"AQAAAAIAAAAAAAAA/AEAAAAAAAAAAAAA",
-					"AgAAAAAAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAPC/AAAAAAEAAAACAAAAAAAAAAIAAAAAAAAAAAAAAAAA8L8"
+					"AwAAAAAAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAPC/AAAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA8L8AAAAAAQAAAAIAAAAAAAAAAgAAAAAAAAAAAAAAAADwvw"
 				]
 			]
 		},
@@ -72,7 +69,7 @@
 					"paste",
 					null,
 					"AQAAAAAAAAAAAAAAs80CAAAAAAAAAAAA",
-					"AgAAAAAAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAPC/AAAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA8L8"
+					"AwAAAAAAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAPC/AAAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA8L8AAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADwvw"
 				]
 			]
 		}
@@ -131,10 +128,6 @@
 		"side_bar_visible": false,
 		"status_bar_visible": false
 	},
-	"expanded_folders":
-	[
-		"/C/Projects/OccationDisplay"
-	],
 	"file_history":
 	[
 		"/C/Projects/OccationDisplay/platformio.ini",
@@ -259,15 +252,15 @@
 					"semi_transient": false,
 					"settings":
 					{
-						"buffer_size": 17627,
+						"buffer_size": 21911,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								852,
-								852
+								0,
+								0
 							]
 						],
 						"settings":

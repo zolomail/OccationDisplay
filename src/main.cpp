@@ -5,6 +5,7 @@
 
 #include <WiFi.h>
 #include <WebServer.h>
+#include <Preferences.h>
 #include <ESP32-HUB75-MatrixPanel-I2S-DMA.h>
 
 // Custom Scene & Effect Headers
@@ -67,6 +68,11 @@ namespace Config {
     constexpr char     AP_SSID[]       = "ESP8285-Display";
     constexpr char     AP_PASSWORD[]   = "123456789";
 
+    constexpr char     DEFAULT_SSID[]   = "bandit";
+    constexpr char     DEFAULT_PASS[]   = "limfjordenerblaa";
+    constexpr char     DEFAULT_SCROLL[] = "put your text here now --- \x80\x80\x80 --- ";
+    constexpr char     PREFS_NS[]       = "display";
+
     // POSIX timezone string for Central European Time with automatic DST
     constexpr char     TZ_INFO[]       = "CET-1CEST,M3.5.0,M10.5.0/3";
     constexpr char     NTP_SERVER[]    = "pool.ntp.org";
@@ -92,17 +98,19 @@ namespace Colors {
 // Application State
 // =========================================================================
 std::unique_ptr<MatrixPanel_I2S_DMA> dma_display;
-WebServer server(80);
+WebServer   server(80);
+Preferences prefs;
 
-String wifi_ssid     = "bandit";
-String wifi_password = "limfjordenerblaa";
+String wifi_ssid     = Config::DEFAULT_SSID;
+String wifi_password = Config::DEFAULT_PASS;
+String scroll_text   = Config::DEFAULT_SCROLL;
 String wifi_err      = "";
 
 tm current_time{};
 
-bool is_ap        = false;
-bool first_access = false;
-bool test_mode    = false;
+bool is_ap     = false;
+bool show_ip   = true;
+bool test_mode = false;
 
 std::shared_ptr<ScrollText> scroller;
 std::unique_ptr<FlyingText> ip_overlay;
@@ -290,7 +298,7 @@ Scene createScene(SceneId id, MatrixPanel_I2S_DMA& display)
             return {
                 std::make_shared<ClearScreen>(display),
                 std::make_shared<ShowTime>(display, current_time, -1, -1, 0, 0, Colors::ORANGE, TINY_WIDE_FONT, true),
-                std::make_shared<BubblesInt>(display, 8)
+                std::make_shared<BubblesInt>(display, 16)
             };
 
         case SceneId::WifiUnknown:
@@ -363,7 +371,7 @@ void startAccessPoint(const char* reason)
 void connectStation()
 {
     is_ap = false;
-    first_access = false;
+    show_ip = true;
     ip_overlay.reset();
     cached_ip = IPAddress();
     WiFi.softAPdisconnect(true);
@@ -373,11 +381,6 @@ void connectStation()
 
 void handleRootHttp()
 {
-    if (!is_ap) {
-        first_access = true;
-        ip_overlay.reset();
-    }
-
     String html = R"raw(<!DOCTYPE html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><title>Occasion Display</title></head><body>)raw";
     if (wifi_err.length() > 0) {
         html += "<p style='color:red;'><b>Last Wi-Fi error:</b> " + wifi_err + "</p>";
@@ -385,8 +388,12 @@ void handleRootHttp()
     html += R"raw(
 <h2>Enter scroll text:</h2>
 <form id="form">
-  <input id="text" placeholder="Scroll text..."><button type="submit">Update</button>
+  <input id="text" placeholder="Scroll text..."> <button type="submit">Update</button>
 </form>
+<hr>
+<h2>Display Options:</h2>
+<label><input type="checkbox" id="test_mode" )raw" + String(test_mode ? "checked" : "") + R"raw(> Test Mode</label><br><br>
+<label><input type="checkbox" id="show_ip" )raw" + String(show_ip ? "checked" : "") + R"raw(> Show IP Address</label>
 <hr>
 <h2>Wi-Fi Settings:</h2>
 <form method="POST" action="/wifi">
@@ -404,6 +411,18 @@ document.getElementById('form').addEventListener('submit', function (se) {
     body: params
   });
 });
+
+function updateOptions() {
+  var params = 'test_mode=' + (document.getElementById('test_mode').checked ? '1' : '0') +
+               '&show_ip=' + (document.getElementById('show_ip').checked ? '1' : '0');
+  fetch('/options', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+    body: params
+  });
+}
+document.getElementById('test_mode').addEventListener('change', updateOptions);
+document.getElementById('show_ip').addEventListener('change', updateOptions);
 </script>
 </body></html>)raw";
 
@@ -413,26 +432,46 @@ document.getElementById('form').addEventListener('submit', function (se) {
 void handleScrollerHttp()
 {
     const String text = server.arg("text").length() > 0 ? server.arg("text") : server.arg(0);
-    if (text.length() > 1 && text.length() < 5) {
-        test_mode = true;
-    } else {
-        test_mode = false;
-        scroller->setText(text);
+    scroll_text = text;
+    scroller->setText(scroll_text);
+
+    prefs.begin(Config::PREFS_NS, false);
+    prefs.putString("scroll", scroll_text);
+    prefs.end();
+
+    server.send(200, "text/plain", "OK");
+}
+
+void handleOptionsHttp()
+{
+    if (server.hasArg("test_mode")) {
+        test_mode = (server.arg("test_mode") == "1");
+    }
+    if (server.hasArg("show_ip")) {
+        show_ip = (server.arg("show_ip") == "1");
+        if (!show_ip) {
+            ip_overlay.reset();
+        }
     }
     server.send(200, "text/plain", "OK");
 }
 
 void handleWifiHttp()
 {
+    prefs.begin(Config::PREFS_NS, false);
     if (server.hasArg("ssid") && server.arg("ssid").length() > 0) {
         wifi_ssid = server.arg("ssid");
+        prefs.putString("ssid", wifi_ssid);
     }
     if (server.hasArg("pass") && server.arg("pass").length() > 0) {
         wifi_password = server.arg("pass");
+        prefs.putString("pass", wifi_password);
     }
+    prefs.end();
+
     wifi_err = "";
     server.send(200, "text/html",
-        "<!DOCTYPE html><html><body><p>Connecting to <b>" + wifi_ssid +
+        "<!DOCTYPE html><html><body><p>Saved! Connecting to <b>" + wifi_ssid +
         "</b>...</p><p><a href='/'>Back</a></p></body></html>");
     delay(200);
     connectStation();
@@ -448,7 +487,8 @@ void updateAndRenderWifiState()
 
             renderScene(selectDateScene(current_time, test_mode));
 
-            if (!first_access) {
+            if (show_ip)
+            {
                 const IPAddress ip = WiFi.localIP();
                 if (!ip_overlay || ip != cached_ip) {
                     cached_ip  = ip;
@@ -548,10 +588,17 @@ void setup()
         Serial.println("PSRAM not detected!");
     }
 
+    // Load persisted settings from NVS flash (survives reflashing)
+    prefs.begin(Config::PREFS_NS, true);
+    wifi_ssid     = prefs.getString("ssid", Config::DEFAULT_SSID);
+    wifi_password = prefs.getString("pass", Config::DEFAULT_PASS);
+    scroll_text   = prefs.getString("scroll", Config::DEFAULT_SCROLL);
+    prefs.end();
+
     // Create shared scroller instance; scenes themselves are created on demand
     scroller = std::make_shared<ScrollText>(
         *dma_display,
-        "put your text here now --- \x80\x80\x80 --- ",
+        scroll_text,
         6, -10, Colors::RED, TINY_WIDE_FONT
     );
 
@@ -563,6 +610,7 @@ void setup()
 
     server.on("/", HTTP_GET, handleRootHttp);
     server.on("/scroller", HTTP_POST, handleScrollerHttp);
+    server.on("/options", HTTP_POST, handleOptionsHttp);
     server.on("/wifi", HTTP_POST, handleWifiHttp);
     server.begin();
 
