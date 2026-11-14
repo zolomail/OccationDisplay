@@ -13,7 +13,7 @@ public:
 protected:
 	String m_text;
 	uint16_t m_width, m_height;
-	int16_t m_x, m_y;
+	int16_t m_x, m_y, m_initial_y;
 	int16_t m_dx;
 	uint16_t m_color;
 	uint8_t m_font;

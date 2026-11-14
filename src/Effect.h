@@ -14,7 +14,9 @@ static constexpr uint16_t color565(uint8_t r, uint8_t g, uint8_t b)
 class Effect
 {
 public:
-	Effect(Adafruit_GFX &matrix) : m_matrix(matrix) {};
+	Effect(Adafruit_GFX &matrix) : m_matrix(matrix) {}
+	virtual ~Effect() = default;
+
 	virtual void render() {
 		m_matrix.setTextColor(0xFFFF);
 		m_matrix.setCursor(0,0);
