@@ -28,54 +28,51 @@
 #include "ufo.h"
 #include "pumpkin.h"
 #include "ghost.h"
+#include "champagne.h"
 
 namespace {
-
-const uint16_t newyear_bitmap[] = {
-    #include "champagne.h"
-};
-
 // =========================================================================
 // Hardware, Network & Timing Configuration (ESP32-S3 SuperMini)
 // =========================================================================
-namespace Config {
-    constexpr uint8_t  LED_PIN         = 48;
+namespace Config
+{
+    constexpr uint8_t LED_PIN           = 48;
 
-    constexpr uint16_t PANEL_RES_X     = 64;
-    constexpr uint16_t PANEL_RES_Y     = 32;
-    constexpr uint16_t PANEL_CHAIN     = 2; // 2 chained panels = 128x32
+    constexpr uint16_t PANEL_RES_X      = 64;
+    constexpr uint16_t PANEL_RES_Y      = 32;
+    constexpr uint16_t PANEL_CHAIN      = 2; // 2 chained panels = 128x32
 
-    constexpr int8_t   PIN_R1          = 44; // Routed to RX (GPIO 44)
-    constexpr int8_t   PIN_G1          = 13;
-    constexpr int8_t   PIN_B1          = 1;
-    constexpr int8_t   PIN_R2          = 2;
-    constexpr int8_t   PIN_G2          = 12;
-    constexpr int8_t   PIN_B2          = 3;
+    constexpr int8_t PIN_R1             = 44; // Routed to RX (GPIO 44)
+    constexpr int8_t PIN_G1             = 13;
+    constexpr int8_t PIN_B1             = 1;
+    constexpr int8_t PIN_R2             = 2;
+    constexpr int8_t PIN_G2             = 12;
+    constexpr int8_t PIN_B2             = 3;
+                
+    constexpr int8_t PIN_A              = 4;
+    constexpr int8_t PIN_B              = 11;
+    constexpr int8_t PIN_C              = 5;
+    constexpr int8_t PIN_D              = 10;
+    constexpr int8_t PIN_E              = -1; // GND (1/16 scan)
 
-    constexpr int8_t   PIN_A           = 4;
-    constexpr int8_t   PIN_B           = 11;
-    constexpr int8_t   PIN_C           = 5;
-    constexpr int8_t   PIN_D           = 10;
-    constexpr int8_t   PIN_E           = -1; // GND (1/16 scan)
+    constexpr int8_t PIN_CLK            = 6;
+    constexpr int8_t PIN_LAT            = 9;
+    constexpr int8_t PIN_OE             = 7;
 
-    constexpr int8_t   PIN_CLK         = 6;
-    constexpr int8_t   PIN_LAT         = 9;
-    constexpr int8_t   PIN_OE          = 7;
+    constexpr uint8_t BRIGHTNESS        = 32;
+    constexpr uint32_t FRAME_TIME_MS    = 40; // ~25 FPS
 
-    constexpr uint8_t  BRIGHTNESS      = 32;
-    constexpr uint32_t FRAME_TIME_MS   = 40; // ~25 FPS
+    constexpr char AP_SSID[]            = "ESP8285-Display";
+    constexpr char AP_PASSWORD[]        = "123456789";
 
-    constexpr char     AP_SSID[]       = "ESP8285-Display";
-    constexpr char     AP_PASSWORD[]   = "123456789";
-
-    constexpr char     DEFAULT_SSID[]   = "bandit";
-    constexpr char     DEFAULT_PASS[]   = "limfjordenerblaa";
-    constexpr char     DEFAULT_SCROLL[] = "put your text here now --- \x80\x80\x80 --- ";
-    constexpr char     PREFS_NS[]       = "display";
+    constexpr char DEFAULT_SSID[]       = "bandit";
+    constexpr char DEFAULT_PASS[]       = "limfjordenerblaa";
+    constexpr char DEFAULT_SCROLL[]     = "put your text here now --- \x80\x80\x80 --- ";
+    constexpr char PREFS_NS[]           = "display";
 
     // POSIX timezone string for Central European Time with automatic DST
-    constexpr char     TZ_INFO[]       = "CET-1CEST,M3.5.0,M10.5.0/3";
-    constexpr char     NTP_SERVER[]    = "pool.ntp.org";
+    constexpr char TZ_INFO[]            = "CET-1CEST,M3.5.0,M10.5.0/3";
+    constexpr char NTP_SERVER[]         = "pool.ntp.org";
 }
 
 // =========================================================================
@@ -379,6 +376,7 @@ void connectStation()
     WiFi.begin(wifi_ssid.c_str(), wifi_password.c_str());
 }
 
+//  <ip>/
 void handleRootHttp()
 {
     String html = R"raw(<!DOCTYPE html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><title>Occasion Display</title></head><body>)raw";
@@ -386,49 +384,50 @@ void handleRootHttp()
         html += "<p style='color:red;'><b>Last Wi-Fi error:</b> " + wifi_err + "</p>";
     }
     html += R"raw(
-<h2>Enter scroll text:</h2>
-<form id="form">
-  <input id="text" placeholder="Scroll text..."> <button type="submit">Update</button>
-</form>
-<hr>
-<h2>Display Options:</h2>
-<label><input type="checkbox" id="test_mode" )raw" + String(test_mode ? "checked" : "") + R"raw(> Test Mode</label><br><br>
-<label><input type="checkbox" id="show_ip" )raw" + String(show_ip ? "checked" : "") + R"raw(> Show IP Address</label>
-<hr>
-<h2>Wi-Fi Settings:</h2>
-<form method="POST" action="/wifi">
-  SSID: <input name="ssid" value=")raw" + wifi_ssid + R"raw("><br><br>
-  Password: <input name="pass" type="password" placeholder="Leave blank to keep current"><br><br>
-  <button type="submit">Save &amp; Connect</button>
-</form>
-<script>
-document.getElementById('form').addEventListener('submit', function (se) {
-  se.preventDefault();
-  var params = 'text=' + encodeURIComponent(document.getElementById('text').value);
-  fetch('/scroller', {
-    method: 'POST',
-    headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-    body: params
-  });
-});
+    <h2>Enter scroll text:</h2>
+    <form id="form">
+    <input id="text" placeholder="Scroll text..."> <button type="submit">Update</button>
+    </form>
+    <hr>
+    <h2>Display Options:</h2>
+    <label><input type="checkbox" id="test_mode" )raw" + String(test_mode ? "checked" : "") + R"raw(> Test Mode</label><br><br>
+    <label><input type="checkbox" id="show_ip" )raw" + String(show_ip ? "checked" : "") + R"raw(> Show IP Address</label>
+    <hr>
+    <h2>Wi-Fi Settings:</h2>
+    <form method="POST" action="/wifi">
+    SSID: <input name="ssid" value=")raw" + wifi_ssid + R"raw("><br><br>
+    Password: <input name="pass" type="password" placeholder="Leave blank to keep current"><br><br>
+    <button type="submit">Save &amp; Connect</button>
+    </form>
+    <script>
+    document.getElementById('form').addEventListener('submit', function (se) {
+    se.preventDefault();
+    var params = 'text=' + encodeURIComponent(document.getElementById('text').value);
+    fetch('/scroller', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+        body: params
+    });
+    });
 
-function updateOptions() {
-  var params = 'test_mode=' + (document.getElementById('test_mode').checked ? '1' : '0') +
-               '&show_ip=' + (document.getElementById('show_ip').checked ? '1' : '0');
-  fetch('/options', {
-    method: 'POST',
-    headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-    body: params
-  });
-}
-document.getElementById('test_mode').addEventListener('change', updateOptions);
-document.getElementById('show_ip').addEventListener('change', updateOptions);
-</script>
-</body></html>)raw";
+    function updateOptions() {
+    var params = 'test_mode=' + (document.getElementById('test_mode').checked ? '1' : '0') +
+                '&show_ip=' + (document.getElementById('show_ip').checked ? '1' : '0');
+    fetch('/options', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+        body: params
+    });
+    }
+    document.getElementById('test_mode').addEventListener('change', updateOptions);
+    document.getElementById('show_ip').addEventListener('change', updateOptions);
+    </script>
+    </body></html>)raw";
 
     server.send(200, "text/html", html);
 }
 
+// <ip>/scroller
 void handleScrollerHttp()
 {
     const String text = server.arg("text").length() > 0 ? server.arg("text") : server.arg(0);
@@ -442,6 +441,7 @@ void handleScrollerHttp()
     server.send(200, "text/plain", "OK");
 }
 
+// <ip>/options
 void handleOptionsHttp()
 {
     if (server.hasArg("test_mode")) {
@@ -456,6 +456,7 @@ void handleOptionsHttp()
     server.send(200, "text/plain", "OK");
 }
 
+// <ip>/wifi
 void handleWifiHttp()
 {
     prefs.begin(Config::PREFS_NS, false);
@@ -632,6 +633,15 @@ void loop()
 
     dma_display->flipDMABuffer();
     server.handleClient();
+
+    static uint32_t last_led_toggle = 0;
+    static bool led_on = false;
+    if (frame_start - last_led_toggle >= 300)
+    {
+        last_led_toggle = frame_start;
+        led_on = !led_on;
+        rgbLedWrite(Config::LED_PIN, led_on ? 30 : 0, 0, 0);
+    }
 
     const uint32_t elapsed = millis() - frame_start;
     if (elapsed < Config::FRAME_TIME_MS) {

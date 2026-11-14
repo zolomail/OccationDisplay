@@ -26,7 +26,7 @@ void Flake::reset(uint8_t max_x, uint8_t max_y)
 SnowScape::SnowScape(Adafruit_GFX &matrix, uint8_t flakes, int16_t snow_max_height) :
 	Effect(matrix),
 	m_ground(m_matrix.width(), (m_matrix.height()-1)<<1),
-	m_flakes(flakes, {(uint8_t)m_matrix.width()-1, (uint8_t)m_matrix.height()-1}),	// Copy constructor abuse
+	m_flakes(flakes, {static_cast<uint8_t>(m_matrix.width() - 1), static_cast<uint8_t>(m_matrix.height() - 1)}),	// Copy constructor abuse
 	myWHITE(color565(255, 255, 255)),
 	m_snow_max_height(snow_max_height)
 {
