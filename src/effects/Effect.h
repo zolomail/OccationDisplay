@@ -2,8 +2,8 @@
 
 #include <Arduino.h>
 #include <Adafruit_GFX.h>    // Core graphics library
-#include "TinyWide.h"
-#include "SmallWide.h"
+#include "fonts/TinyWide.h"
+#include "fonts/SmallWide.h"
 #include <Fonts/Org_01.h>
 #include <Fonts/TomThumb.h>
 #include <Fonts/Picopixel.h>

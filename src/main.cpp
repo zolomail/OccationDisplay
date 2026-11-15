@@ -10,27 +10,28 @@
 
 // Custom Scene & Effect Headers
 #include "Scene.h"
-#include "ClearScreen.h"
-#include "SnowScape.h"
-#include "Stars.h"
-#include "FunkyLine.h"
-#include "Present.h"
-#include "FlyingText.h"
-#include "Rocket.h"
-#include "ShowTime.h"
-#include "Bitmap.h"
-#include "ShootingStar.h"
-#include "Circle.h"
-#include "Scrolltext.h"
-#include "Blood.h"
-#include "BubblesInt.h"
-#include "Flames.h"
 #include "Weather.h"
+#include "effects/ClearScreen.h"
+#include "effects/SnowScape.h"
+#include "effects/Stars.h"
+#include "effects/FunkyLine.h"
+#include "effects/Present.h"
+#include "effects/FlyingText.h"
+#include "effects/Rocket.h"
+#include "effects/ShowTime.h"
+#include "effects/Bitmap.h"
+#include "effects/ShootingStar.h"
+#include "effects/Circle.h"
+#include "effects/ScrollText.h"
+#include "effects/Blood.h"
+#include "effects/BubblesInt.h"
+#include "effects/Flames.h"
+#include "effects/WeatherOverlay.h"
 
-#include "ufo.h"
-#include "pumpkin.h"
-#include "ghost.h"
-#include "champagne.h"
+#include "bitmaps/ufo.h"
+#include "bitmaps/pumpkin.h"
+#include "bitmaps/ghost.h"
+#include "bitmaps/champagne.h"
 
 namespace {
 // =========================================================================
@@ -222,14 +223,16 @@ Scene createScene(SceneId id, MatrixPanel_I2S_DMA& display)
             return {
                 std::make_shared<ClearScreen>(display),
                 scroller,
-                std::make_shared<ShowTime>(display, current_time, -1, -1, 0, 0, Colors::BLUE, NORMAL_FONT, true)
+                std::make_shared<ShowTime>(display, current_time, -1, -1, 0, 0, Colors::BLUE, NORMAL_FONT, true),
+                std::make_shared<WeatherOverlay>(display, 0, 6, Colors::CYAN)
             };
 
         case SceneId::JustSnow:
             return {
                 std::make_shared<ClearScreen>(display),
                 scroller,
-                std::make_shared<SnowScape>(display, 50, 10)
+                std::make_shared<SnowScape>(display, 50, 10),
+                std::make_shared<WeatherOverlay>(display, 0, 6, Colors::CYAN)
             };
 
         case SceneId::Aquatic:
@@ -582,7 +585,7 @@ void setup()
     scroller = std::make_shared<ScrollText>(
         *dma_display,
         scroll_text,
-        6, -10, Colors::RED, FontId::TINY_WIDE_FONT
+        -1, -10, Colors::RED, FontId::TINY_WIDE_FONT
     );
 
     // Configure native ESP32 SNTP with automatic CET/CEST Daylight Saving Time

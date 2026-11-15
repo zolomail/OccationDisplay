@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Effect.h"
+#include "effects/Effect.h"
 
 class Scene : public std::vector<std::shared_ptr<Effect>>
 {
