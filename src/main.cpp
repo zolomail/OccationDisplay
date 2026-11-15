@@ -26,6 +26,7 @@
 #include "effects/BubblesInt.h"
 #include "effects/Flames.h"
 #include "effects/WeatherOverlay.h"
+#include "effects/WaveSim.h"
 
 #include "bitmaps/ufo.h"
 #include "bitmaps/pumpkin.h"
@@ -116,7 +117,8 @@ enum class SceneId : uint8_t {
     NewYearsDay,
     ChristmasDays,
     NormalDays,
-    FlamingHot
+    FlamingHot,
+    WaterEffect
 };
 
 Scene   active_scene;
@@ -224,6 +226,11 @@ Scene createScene(SceneId id, MatrixPanel_I2S_DMA& display)
             return {
                 std::make_shared<ClearScreen>(display),
                 std::make_shared<Flames>(display, 5)
+            };
+
+        case SceneId::WaterEffect:
+            return {
+                std::make_shared<WaveSim>(display, 5, true)
             };
 
         case SceneId::ChristmasDays:
