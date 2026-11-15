@@ -99,28 +99,6 @@ IPAddress                   cached_ip;
 // =========================================================================
 // On-Demand Scene Management
 // =========================================================================
-enum class SceneId : uint8_t {
-    None,
-    Welcome,
-    Connecting,
-    SetupAp,
-    WifiUnknown,
-    WifiStopped,
-    Test,
-    NewYearsMidnight,
-    JanuaryDays,
-    Aquatic,
-    Halloween,
-    JustSnow,
-    ChristmasEve,
-    Birthday,
-    NewYearsDay,
-    ChristmasDays,
-    NormalDays,
-    FlamingHot,
-    WaterEffect
-};
-
 Scene   active_scene;
 SceneId active_scene_id = SceneId::None;
 
@@ -487,9 +465,9 @@ void loop()
         // We are connected to an Access Point, we are good to show scenes
         const time_t now = time(nullptr);
         localtime_r(&now, &current_time);
-        if (WebUi::isTestMode())
+        if (const SceneId override_id = WebUi::selectedScene(); override_id != SceneId::None)
         {
-            renderScene(SceneId::Test);
+            renderScene(override_id);
         } else {
             renderScene(selectDateScene(current_time));
         }

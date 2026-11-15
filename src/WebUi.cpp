@@ -25,9 +25,31 @@ String wifi_password = DEFAULT_PASS;
 String scroll_text   = DEFAULT_SCROLL;
 String wifi_err      = "";
 
-bool is_ap     = false;
-bool show_ip   = true;
-bool test_mode = false;
+bool    is_ap          = false;
+bool    show_ip        = true;
+SceneId selected_scene = SceneId::None;
+
+struct SceneOption {
+    SceneId     id;
+    const char* label;
+};
+
+constexpr SceneOption SCENE_OPTIONS[] = {
+    { SceneId::None,             "Current Occation" },
+    { SceneId::Test,             "Test"             },
+    { SceneId::NewYearsMidnight, "NewYearsMidnight" },
+    { SceneId::JanuaryDays,      "JanuaryDays"      },
+    { SceneId::Aquatic,          "Aquatic"          },
+    { SceneId::Halloween,        "Halloween"        },
+    { SceneId::JustSnow,         "JustSnow"         },
+    { SceneId::ChristmasEve,     "ChristmasEve"     },
+    { SceneId::Birthday,         "Birthday"         },
+    { SceneId::NewYearsDay,      "NewYearsDay"      },
+    { SceneId::ChristmasDays,    "ChristmasDays"    },
+    { SceneId::NormalDays,       "NormalDays"       },
+    { SceneId::FlamingHot,       "FlamingHot"       },
+    { SceneId::WaterEffect,      "WaterEffect"      }
+};
 
 std::shared_ptr<ScrollText> scroller_ref;
 
@@ -60,7 +82,18 @@ void handleRootHttp()
     </form>
     <hr>
     <h2>Display Options:</h2>
-    <label><input type="checkbox" id="test_mode" )raw" + String(test_mode ? "checked" : "") + R"raw(> Test Mode</label><br><br>
+    <label for="scene_id">Scene: </label>
+    <select id="scene_id">)raw";
+
+    for (const auto& opt : SCENE_OPTIONS) {
+        html += "<option value=\"" + String(static_cast<uint8_t>(opt.id)) + "\"";
+        if (opt.id == selected_scene) {
+            html += " selected";
+        }
+        html += ">" + String(opt.label) + "</option>";
+    }
+
+    html += R"raw(</select><br><br>
     <label><input type="checkbox" id="show_ip" )raw" + String(show_ip ? "checked" : "") + R"raw(> Show IP Address</label>
     <hr>
     <h2>Wi-Fi Settings:</h2>
@@ -81,7 +114,7 @@ void handleRootHttp()
     });
 
     function updateOptions() {
-    var params = 'test_mode=' + (document.getElementById('test_mode').checked ? '1' : '0') +
+    var params = 'scene_id=' + encodeURIComponent(document.getElementById('scene_id').value) +
                 '&show_ip=' + (document.getElementById('show_ip').checked ? '1' : '0');
     fetch('/options', {
         method: 'POST',
@@ -89,7 +122,7 @@ void handleRootHttp()
         body: params
     });
     }
-    document.getElementById('test_mode').addEventListener('change', updateOptions);
+    document.getElementById('scene_id').addEventListener('change', updateOptions);
     document.getElementById('show_ip').addEventListener('change', updateOptions);
     </script>
     </body></html>)raw";
@@ -116,8 +149,11 @@ void handleScrollerHttp()
 // POST /options
 void handleOptionsHttp()
 {
-    if (server.hasArg("test_mode")) {
-        test_mode = (server.arg("test_mode") == "1");
+    if (server.hasArg("scene_id")) {
+        const int id = server.arg("scene_id").toInt();
+        if (id >= static_cast<int>(SceneId::None) && id <= static_cast<int>(SceneId::WaterEffect)) {
+            selected_scene = static_cast<SceneId>(id);
+        }
     }
     if (server.hasArg("show_ip")) {
         show_ip = (server.arg("show_ip") == "1");
@@ -189,7 +225,7 @@ void startAccessPoint(const char* reason)
 }
 
 bool isApMode()          { return is_ap; }
-bool isTestMode()        { return test_mode; }
+SceneId selectedScene()  { return selected_scene; }
 bool showIp()            { return show_ip; }
 const String& wifiError(){ return wifi_err; }
 const char* apSsid()     { return AP_SSID; }
