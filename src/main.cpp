@@ -4,13 +4,12 @@
 #include <memory>
 
 #include <WiFi.h>
-#include <WebServer.h>
-#include <Preferences.h>
 #include <ESP32-HUB75-MatrixPanel-I2S-DMA.h>
 
-// Custom Scene & Effect Headers
+// Custom Scene, Service & Effect Headers
 #include "Scene.h"
 #include "Weather.h"
+#include "WebUi.h"
 #include "effects/ClearScreen.h"
 #include "effects/SnowScape.h"
 #include "effects/Stars.h"
@@ -35,47 +34,39 @@
 
 namespace {
 // =========================================================================
-// Hardware, Network & Timing Configuration (ESP32-S3 SuperMini)
+// Hardware & Timing Configuration (ESP32-S3 SuperMini)
 // =========================================================================
 namespace Config
 {
-    constexpr uint8_t LED_PIN           = 48;
+    constexpr uint8_t  LED_PIN        = 48;
 
-    constexpr uint16_t PANEL_RES_X      = 64;
-    constexpr uint16_t PANEL_RES_Y      = 32;
-    constexpr uint16_t PANEL_CHAIN      = 2; // 2 chained panels = 128x32
+    constexpr uint16_t PANEL_RES_X   = 64;
+    constexpr uint16_t PANEL_RES_Y   = 32;
+    constexpr uint16_t PANEL_CHAIN   = 2; // 2 chained panels = 128x32
 
-    constexpr int8_t PIN_R1             = 44; // Routed to RX (GPIO 44)
-    constexpr int8_t PIN_G1             = 13;
-    constexpr int8_t PIN_B1             = 1;
-    constexpr int8_t PIN_R2             = 2;
-    constexpr int8_t PIN_G2             = 12;
-    constexpr int8_t PIN_B2             = 3;
-                
-    constexpr int8_t PIN_A              = 4;
-    constexpr int8_t PIN_B              = 11;
-    constexpr int8_t PIN_C              = 5;
-    constexpr int8_t PIN_D              = 10;
-    constexpr int8_t PIN_E              = -1; // GND (1/16 scan)
+    constexpr int8_t   PIN_R1        = 44; // Routed to RX (GPIO 44)
+    constexpr int8_t   PIN_G1        = 13;
+    constexpr int8_t   PIN_B1        = 1;
+    constexpr int8_t   PIN_R2        = 2;
+    constexpr int8_t   PIN_G2        = 12;
+    constexpr int8_t   PIN_B2        = 3;
 
-    constexpr int8_t PIN_CLK            = 6;
-    constexpr int8_t PIN_LAT            = 9;
-    constexpr int8_t PIN_OE             = 7;
+    constexpr int8_t   PIN_A         = 4;
+    constexpr int8_t   PIN_B         = 11;
+    constexpr int8_t   PIN_C         = 5;
+    constexpr int8_t   PIN_D         = 10;
+    constexpr int8_t   PIN_E         = -1; // GND (1/16 scan)
 
-    constexpr uint8_t BRIGHTNESS        = 32;
-    constexpr uint32_t FRAME_TIME_MS    = 40; // ~25 FPS
+    constexpr int8_t   PIN_CLK       = 6;
+    constexpr int8_t   PIN_LAT       = 9;
+    constexpr int8_t   PIN_OE        = 7;
 
-    constexpr char AP_SSID[]            = "ESP8285-Display";
-    constexpr char AP_PASSWORD[]        = "123456789";
-
-    constexpr char DEFAULT_SSID[]       = "bandit";
-    constexpr char DEFAULT_PASS[]       = "limfjordenerblaa";
-    constexpr char DEFAULT_SCROLL[]     = "put your text here now --- \x80\x80\x80 --- ";
-    constexpr char PREFS_NS[]           = "display";
+    constexpr uint8_t  BRIGHTNESS    = 32;
+    constexpr uint32_t FRAME_TIME_MS = 40; // ~25 FPS
 
     // POSIX timezone string for Central European Time with automatic DST
-    constexpr char TZ_INFO[]            = "CET-1CEST,M3.5.0,M10.5.0/3";
-    constexpr char NTP_SERVER[]         = "pool.ntp.org";
+    constexpr char     TZ_INFO[]     = "CET-1CEST,M3.5.0,M10.5.0/3";
+    constexpr char     NTP_SERVER[]  = "pool.ntp.org";
 }
 
 // =========================================================================
@@ -98,19 +89,7 @@ namespace Colors {
 // Application State
 // =========================================================================
 std::unique_ptr<MatrixPanel_I2S_DMA> dma_display;
-WebServer   server(80);
-Preferences prefs;
-
-String wifi_ssid     = Config::DEFAULT_SSID;
-String wifi_password = Config::DEFAULT_PASS;
-String scroll_text   = Config::DEFAULT_SCROLL;
-String wifi_err      = "";
-
 tm current_time{};
-
-bool is_ap     = false;
-bool show_ip   = true;
-bool test_mode = false;
 
 std::shared_ptr<ScrollText> scroller;
 std::unique_ptr<FlyingText> ip_overlay;
@@ -169,13 +148,13 @@ Scene createScene(SceneId id, MatrixPanel_I2S_DMA& display)
         {
             Scene scene = {
                 std::make_shared<ClearScreen>(display),
-                std::make_shared<FlyingText>(display, String("SSID : ") + Config::AP_SSID, 8, 13, 0, 0, Colors::WHITE),
-                std::make_shared<FlyingText>(display, String("Password : ") + Config::AP_PASSWORD, 8, 19, 0, 0, Colors::WHITE),
+                std::make_shared<FlyingText>(display, String("SSID : ") + WebUi::apSsid(), 8, 13, 0, 0, Colors::WHITE),
+                std::make_shared<FlyingText>(display, String("Password : ") + WebUi::apPassword(), 8, 19, 0, 0, Colors::WHITE),
                 std::make_shared<FlyingText>(display, "Config : 192.168.4.1", 8, 25, 0, 0, Colors::WHITE)
             };
-            if (wifi_err.length() > 0)
+            if (WebUi::wifiError().length() > 0)
             {
-                scene.push_back(std::make_shared<FlyingText>(display, wifi_err, -1, 2, 0, 0, Colors::RED, TINY_WIDE_FONT));
+                scene.push_back(std::make_shared<FlyingText>(display, WebUi::wifiError(), -1, 2, 0, 0, Colors::RED, TINY_WIDE_FONT));
             }
             return scene;
         }
@@ -217,7 +196,6 @@ Scene createScene(SceneId id, MatrixPanel_I2S_DMA& display)
                     "\x80\x81    ",
                     22, -5, Colors::RED, TINY_WIDE_FONT)
                 };
-
 
         case SceneId::NormalDays:
             return {
@@ -361,139 +339,6 @@ SceneId selectDateScene(const tm& t)
     return SceneId::NormalDays;
 }
 
-// =========================================================================
-// Wi-Fi & Web Server Helpers
-// =========================================================================
-void startAccessPoint(const char* reason)
-{
-    wifi_err = reason;
-    Serial.printf("Starting AP (%s)\n", reason);
-    WiFi.disconnect();
-    WiFi.mode(WIFI_AP);
-    WiFi.softAP(Config::AP_SSID, Config::AP_PASSWORD, 1, false, 1);
-    is_ap = true;
-    active_scene_id = SceneId::None;
-}
-
-void connectStation()
-{
-    is_ap = false;
-    show_ip = true;
-    ip_overlay.reset();
-    cached_ip = IPAddress();
-    WiFi.softAPdisconnect(true);
-    WiFi.mode(WIFI_STA);
-    WiFi.begin(wifi_ssid.c_str(), wifi_password.c_str());
-}
-
-//  <ip>/
-void handleRootHttp()
-{
-    String html = R"raw(<!DOCTYPE html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><title>Occasion Display</title></head><body>)raw";
-    if (wifi_err.length() > 0) {
-        html += "<p style='color:red;'><b>Last Wi-Fi error:</b> " + wifi_err + "</p>";
-    }
-    if (Weather::isValid()) {
-        html += "<p><b>Current Weather (" + Weather::city() + "):</b> " +
-                String(Weather::conditionName()) + " (" + String(Weather::temperature(), 1) + " &deg;C)</p>";
-    } else {
-        html += "<p><b>Current Weather:</b> Fetching...</p>";
-    }
-    html += R"raw(
-    <h2>Enter scroll text:</h2>
-    <form id="form">
-    <input id="text" placeholder="Scroll text..."> <button type="submit">Update</button>
-    </form>
-    <hr>
-    <h2>Display Options:</h2>
-    <label><input type="checkbox" id="test_mode" )raw" + String(test_mode ? "checked" : "") + R"raw(> Test Mode</label><br><br>
-    <label><input type="checkbox" id="show_ip" )raw" + String(show_ip ? "checked" : "") + R"raw(> Show IP Address</label>
-    <hr>
-    <h2>Wi-Fi Settings:</h2>
-    <form method="POST" action="/wifi">
-    SSID: <input name="ssid" value=")raw" + wifi_ssid + R"raw("><br><br>
-    Password: <input name="pass" type="password" placeholder="Leave blank to keep current"><br><br>
-    <button type="submit">Save &amp; Connect</button>
-    </form>
-    <script>
-    document.getElementById('form').addEventListener('submit', function (se) {
-    se.preventDefault();
-    var params = 'text=' + encodeURIComponent(document.getElementById('text').value);
-    fetch('/scroller', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-        body: params
-    });
-    });
-
-    function updateOptions() {
-    var params = 'test_mode=' + (document.getElementById('test_mode').checked ? '1' : '0') +
-                '&show_ip=' + (document.getElementById('show_ip').checked ? '1' : '0');
-    fetch('/options', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-        body: params
-    });
-    }
-    document.getElementById('test_mode').addEventListener('change', updateOptions);
-    document.getElementById('show_ip').addEventListener('change', updateOptions);
-    </script>
-    </body></html>)raw";
-
-    server.send(200, "text/html", html);
-}
-
-// <ip>/scroller
-void handleScrollerHttp()
-{
-    const String text = server.arg("text").length() > 0 ? server.arg("text") : server.arg(0);
-    scroll_text = text;
-    scroller->setText(scroll_text);
-
-    prefs.begin(Config::PREFS_NS, false);
-    prefs.putString("scroll", scroll_text);
-    prefs.end();
-
-    server.send(200, "text/plain", "OK");
-}
-
-// <ip>/options
-void handleOptionsHttp()
-{
-    if (server.hasArg("test_mode")) {
-        test_mode = (server.arg("test_mode") == "1");
-    }
-    if (server.hasArg("show_ip")) {
-        show_ip = (server.arg("show_ip") == "1");
-        if (!show_ip) {
-            ip_overlay.reset();
-        }
-    }
-    server.send(200, "text/plain", "OK");
-}
-
-// <ip>/wifi
-void handleWifiHttp()
-{
-    prefs.begin(Config::PREFS_NS, false);
-    if (server.hasArg("ssid") && server.arg("ssid").length() > 0) {
-        wifi_ssid = server.arg("ssid");
-        prefs.putString("ssid", wifi_ssid);
-    }
-    if (server.hasArg("pass") && server.arg("pass").length() > 0) {
-        wifi_password = server.arg("pass");
-        prefs.putString("pass", wifi_password);
-    }
-    prefs.end();
-
-    wifi_err = "";
-    server.send(200, "text/html",
-        "<!DOCTYPE html><html><body><p>Saved! Connecting to <b>" + wifi_ssid +
-        "</b>...</p><p><a href='/'>Back</a></p></body></html>");
-    delay(200);
-    connectStation();
-}
-
 SceneId checkWifiState()
 {
     switch (WiFi.status())
@@ -501,16 +346,20 @@ SceneId checkWifiState()
         case WL_CONNECTED:      return SceneId::None;
         case WL_IDLE_STATUS:    return SceneId::Welcome;
         case WL_NO_SSID_AVAIL:
-            startAccessPoint("Couldn't find SSID");
+            WebUi::startAccessPoint("Couldn't find SSID");
+            active_scene_id = SceneId::None;
             return SceneId::SetupAp;
 
         case WL_CONNECT_FAILED:
-            startAccessPoint("Bad password!");
+            WebUi::startAccessPoint("Bad password!");
+            active_scene_id = SceneId::None;
             return SceneId::SetupAp;
 
         case WL_CONNECTION_LOST:
-            startAccessPoint("Connection lost!");
+            WebUi::startAccessPoint("Connection lost!");
+            active_scene_id = SceneId::None;
             return SceneId::SetupAp;
+
         case WL_DISCONNECTED:   return SceneId::Connecting;
         case WL_NO_SHIELD:
         case WL_SCAN_COMPLETED: return SceneId::WifiUnknown;
@@ -574,17 +423,10 @@ void setup()
         Serial.println("PSRAM not detected!");
     }
 
-    // Load persisted settings from NVS flash (survives reflashing)
-    prefs.begin(Config::PREFS_NS, true);
-    wifi_ssid     = prefs.getString("ssid", Config::DEFAULT_SSID);
-    wifi_password = prefs.getString("pass", Config::DEFAULT_PASS);
-    scroll_text   = prefs.getString("scroll", Config::DEFAULT_SCROLL);
-    prefs.end();
-
-    // Create shared scroller instance; scenes themselves are created on demand
+    // Create shared scroller instance; WebUi::begin() will load persisted text into it
     scroller = std::make_shared<ScrollText>(
         *dma_display,
-        scroll_text,
+        "",
         -1, -10, Colors::RED, FontId::TINY_WIDE_FONT
     );
 
@@ -594,14 +436,8 @@ void setup()
     // Start background weather polling task on Core 0
     Weather::begin();
 
-    // Start Wi-Fi & Web Server
-    connectStation();
-
-    server.on("/", HTTP_GET, handleRootHttp);
-    server.on("/scroller", HTTP_POST, handleScrollerHttp);
-    server.on("/options", HTTP_POST, handleOptionsHttp);
-    server.on("/wifi", HTTP_POST, handleWifiHttp);
-    server.begin();
+    // Load NVS settings, connect Wi-Fi, and start the HTTP server
+    WebUi::begin(scroller);
 
     Serial.println("Start...");
 }
@@ -634,42 +470,45 @@ void loop()
 {
     const uint32_t frame_start = millis();
 
-    if (is_ap) {
+    if (WebUi::isApMode()) {
         // We are the Access Point (Show scene that displays connect info)
         renderScene(SceneId::SetupAp);
-    } else if( SceneId id = checkWifiState(); id != SceneId::None){
+    } else if (SceneId id = checkWifiState(); id != SceneId::None) {
         // We are trying to connect to an Access Point show scenes about how it is going
         renderScene(id);
-    }else{
-        // We are connected to an Access Point, we are good to show scenes 
+    } else {
+        // We are connected to an Access Point, we are good to show scenes
         const time_t now = time(nullptr);
         localtime_r(&now, &current_time);
-        if (test_mode)
+        if (WebUi::isTestMode())
         {
             renderScene(SceneId::Test);
-        }else{
+        } else {
             renderScene(selectDateScene(current_time));
         }
-        if (show_ip)
+
+        if (WebUi::showIp())
         {
             const IPAddress ip = WiFi.localIP();
             if (!ip_overlay || ip != cached_ip)
             {
-                cached_ip = ip;
-                ip_overlay = std::unique_ptr<FlyingText>(new FlyingText(*dma_display, ip.toString(), -1, 0, 0, 0, Colors::GREEN, TINY_WIDE_FONT));
+                cached_ip  = ip;
+                ip_overlay = std::unique_ptr<FlyingText>(
+                    new FlyingText(*dma_display, ip.toString(), -1, 0, 0, 0, Colors::GREEN, TINY_WIDE_FONT)
+                );
             }
             ip_overlay->render();
         }
     }
 
     dma_display->flipDMABuffer();
-    server.handleClient();
+    WebUi::handleClient();
 
     const uint32_t elapsed = millis() - frame_start;
     if (elapsed < Config::FRAME_TIME_MS) {
         BlinkLed(frame_start, false);
         delay(Config::FRAME_TIME_MS - elapsed);
-    }else{
+    } else {
         Serial.println("Rendering took too long");
         BlinkLed(frame_start, true);
     }
