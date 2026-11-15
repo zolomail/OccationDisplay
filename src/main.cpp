@@ -17,7 +17,7 @@
 #include "effects/FunkyLine.h"
 #include "effects/Present.h"
 #include "effects/FlyingText.h"
-#include "effects/Rocket.h"
+#include "effects/FireWorks.h"
 #include "effects/ShowTime.h"
 #include "effects/Bitmap.h"
 #include "effects/ShootingStar.h"
@@ -308,7 +308,7 @@ Scene createScene(SceneId id, MatrixPanel_I2S_DMA& display)
             return {
                 std::make_shared<ClearScreen>(display),
                 std::make_shared<Stars>(display),
-                std::make_shared<Rocket>(display),
+                std::make_shared<FireWorks>(display),
                 std::make_shared<FlyingText>(display, "Happy New Year", -1, 5, 0, 0, Colors::BLUE),
                 std::make_shared<FlyingText>(display, String(current_year + 1), -1, 13, 0, 0, Colors::WHITE),
                 std::make_shared<ShowTime>(display, current_time, -1, 21, 0, 0, Colors::CYAN)
@@ -319,9 +319,9 @@ Scene createScene(SceneId id, MatrixPanel_I2S_DMA& display)
                 std::make_shared<ClearScreen>(display),
                 std::make_shared<Stars>(display),
                 std::make_shared<Bitmap>(display, *newyear_bitmap, 34, 32),
-                std::make_shared<Rocket>(display, -200),
-                std::make_shared<Rocket>(display, -200),
-                std::make_shared<Rocket>(display, -200),
+                std::make_shared<FireWorks>(display, -200),
+                std::make_shared<FireWorks>(display, -200),
+                std::make_shared<FireWorks>(display, -200),
                 std::make_shared<FlyingText>(display, "Happy New Year", 24, 12, 0, 0, Colors::BLUE)
             };
 

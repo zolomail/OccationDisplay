@@ -1,13 +1,13 @@
-#include "Rocket.h"
+#include "FireWorks.h"
 
-Rocket::Rocket(Adafruit_GFX &matrix, int16_t max_delay_next_launch) :
+FireWorks::FireWorks(Adafruit_GFX &matrix, int16_t max_delay_next_launch) :
 	Effect(matrix),
 	m_max_delay_next_launch(max_delay_next_launch)
 {
 	reset();
 }
 
-void Rocket::reset()
+void FireWorks::reset()
 {
 	m_launch_x = random(0, m_matrix.width()-1);
 	m_max_alt = random(20, m_matrix.height()-1);
@@ -20,7 +20,7 @@ void Rocket::reset()
 	c_b = random(25, 255);
 }
 
-void Rocket::render()
+void FireWorks::render()
 {
 	m_rocket_pos += m_rocket_speed;
 

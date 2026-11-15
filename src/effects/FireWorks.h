@@ -2,12 +2,12 @@
 
 #include "Effect.h"
 
-class Rocket : public Effect
+class FireWorks : public Effect
 {
 public:
-	Rocket(Adafruit_GFX &matrix, int16_t max_delay_next_launch=-1000);
+	FireWorks(Adafruit_GFX &matrix, int16_t max_delay_next_launch=-1000);
 	void reset();
-	void render();
+	void render() override;
 
 private:
 	int16_t m_launch_x;
