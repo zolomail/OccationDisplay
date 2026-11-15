@@ -90,31 +90,36 @@ namespace Detail {
     inline void resolveLocationFromIp()
     {
         char body[160];
-        if (!httpGetBody("ip-api.com", "/csv/?fields=status,lat,lon,city", body, sizeof(body))) {
+        if (!httpGetBody("ip-api.com", "/csv/?fields=status,city,lat,lon", body, sizeof(body))) {
             return;
         }
-        // Expected CSV format: "success,57.0488,9.9217,Aalborg\n"
+        // ip-api CSV always returns fields in canonical order: "success,Aarhus,56.1567,10.2153\n"
         if (strncmp(body, "success,", 8) != 0) {
             return;
         }
-        char* p1 = body + 8;
-        char* p2 = strchr(p1, ',');
-        if (!p2) return;
-        *p2++ = '\0';
-
-        char* p3 = strchr(p2, ',');
-        if (!p3) return;
-        *p3++ = '\0';
-
-        char* nl = strpbrk(p3, "\r\n");
+        char* p_city = body + 8;
+        char* nl = strpbrk(p_city, "\r\n");
         if (nl) *nl = '\0';
 
-        const float lat = strtof(p1, nullptr);
-        const float lon = strtof(p2, nullptr);
-        if (lat != 0.0f || lon != 0.0f) {
+        // Parse from the right so city names cannot shift lat/lon columns
+        char* last_comma = strrchr(p_city, ',');
+        if (!last_comma) return;
+        *last_comma = '\0';
+        const char* p_lon = last_comma + 1;
+
+        char* prev_comma = strrchr(p_city, ',');
+        if (!prev_comma) return;
+        *prev_comma = '\0';
+        const char* p_lat = prev_comma + 1;
+
+        char* end_lat = nullptr;
+        char* end_lon = nullptr;
+        const float lat = strtof(p_lat, &end_lat);
+        const float lon = strtof(p_lon, &end_lon);
+        if (end_lat != p_lat && end_lon != p_lon && (lat != 0.0f || lon != 0.0f)) {
             s_lat          = lat;
             s_lon          = lon;
-            s_city         = p3;
+            s_city         = p_city;
             s_geo_resolved = true;
             Serial.printf("Weather location resolved: %s (%.4f, %.4f)\n", s_city.c_str(), s_lat, s_lon);
         }

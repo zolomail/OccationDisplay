@@ -148,13 +148,13 @@ Scene createScene(SceneId id, MatrixPanel_I2S_DMA& display)
         {
             Scene scene = {
                 std::make_shared<ClearScreen>(display),
-                std::make_shared<FlyingText>(display, String("SSID : ") + WebUi::apSsid(), 8, 13, 0, 0, Colors::WHITE),
-                std::make_shared<FlyingText>(display, String("Password : ") + WebUi::apPassword(), 8, 19, 0, 0, Colors::WHITE),
-                std::make_shared<FlyingText>(display, "Config : 192.168.4.1", 8, 25, 0, 0, Colors::WHITE)
+                std::make_shared<FlyingText>(display, String("SSID : ") + WebUi::apSsid(), 0, 7, 0, 0, Colors::WHITE),
+                std::make_shared<FlyingText>(display, String("Pass : ") + WebUi::apPassword(), 0, 15, 0, 0, Colors::WHITE),
+                std::make_shared<FlyingText>(display, String("IpAdr: ") + WiFi.localIP().toString() , 0, 23, 0, 0, Colors::WHITE)
             };
             if (WebUi::wifiError().length() > 0)
             {
-                scene.push_back(std::make_shared<FlyingText>(display, WebUi::wifiError(), -1, 2, 0, 0, Colors::RED, TINY_WIDE_FONT));
+                scene.push_back(std::make_shared<FlyingText>(display, WebUi::wifiError(), -1, 0, 0, 0, Colors::RED, TINY_WIDE_FONT));
             }
             return scene;
         }
@@ -202,7 +202,7 @@ Scene createScene(SceneId id, MatrixPanel_I2S_DMA& display)
                 std::make_shared<ClearScreen>(display),
                 scroller,
                 std::make_shared<ShowTime>(display, current_time, -1, -1, 0, 0, Colors::BLUE, NORMAL_FONT, true),
-                std::make_shared<WeatherOverlay>(display, 0, 6, Colors::CYAN)
+                std::make_shared<WeatherOverlay>(display, -1, 5, Colors::CYAN)
             };
 
         case SceneId::JustSnow:
@@ -210,7 +210,7 @@ Scene createScene(SceneId id, MatrixPanel_I2S_DMA& display)
                 std::make_shared<ClearScreen>(display),
                 scroller,
                 std::make_shared<SnowScape>(display, 50, 10),
-                std::make_shared<WeatherOverlay>(display, 0, 6, Colors::CYAN)
+                std::make_shared<WeatherOverlay>(display, -1, 5, Colors::CYAN)
             };
 
         case SceneId::Aquatic:
