@@ -24,6 +24,8 @@
 #include "Scrolltext.h"
 #include "Blood.h"
 #include "BubblesInt.h"
+#include "Flames.h"
+#include "Weather.h"
 
 #include "ufo.h"
 #include "pumpkin.h"
@@ -130,21 +132,92 @@ enum class SceneId : uint8_t {
     Halloween,
     JustSnow,
     ChristmasEve,
-    ErikBirthday,
+    Birthday,
     NewYearsDay,
     ChristmasDays,
-    NormalDays
+    NormalDays,
+    FlamingHot
 };
 
 Scene   active_scene;
-SceneId active_scene_id   = SceneId::None;
-int     active_scene_year = -1;
+SceneId active_scene_id = SceneId::None;
 
 Scene createScene(SceneId id, MatrixPanel_I2S_DMA& display)
 {
     const int current_year = (current_time.tm_year >= 120) ? (current_time.tm_year + 1900) : 2020;
 
-    switch (id) {
+    switch (id)
+    {
+        case SceneId::Connecting:
+            return {
+                std::make_shared<ClearScreen>(display),
+                std::make_shared<FlyingText>(display, "Connecting...", -1, -1, 0, 0, Colors::ORANGE, TINY_WIDE_FONT)
+            };
+
+        case SceneId::Welcome:
+            return {
+                std::make_shared<ClearScreen>(display),
+                std::make_shared<FlyingText>(display, "*********************", 2, 0, 0, 0, Colors::WHITE),
+                std::make_shared<FlyingText>(display, "*                   *", 2, 8, 0, 0, Colors::WHITE),
+                std::make_shared<FlyingText>(display, "-OCCATION DISPLAY-", -1, -1, 0, 0, Colors::RED),
+                std::make_shared<FlyingText>(display, "*                   *", 2, 16, 0, 0, Colors::WHITE),
+                std::make_shared<FlyingText>(display, "*********************", 2, 24, 0, 0, Colors::WHITE)
+            };
+
+        case SceneId::SetupAp:
+        {
+            Scene scene = {
+                std::make_shared<ClearScreen>(display),
+                std::make_shared<FlyingText>(display, String("SSID : ") + Config::AP_SSID, 8, 13, 0, 0, Colors::WHITE),
+                std::make_shared<FlyingText>(display, String("Password : ") + Config::AP_PASSWORD, 8, 19, 0, 0, Colors::WHITE),
+                std::make_shared<FlyingText>(display, "Config : 192.168.4.1", 8, 25, 0, 0, Colors::WHITE)
+            };
+            if (wifi_err.length() > 0)
+            {
+                scene.push_back(std::make_shared<FlyingText>(display, wifi_err, -1, 2, 0, 0, Colors::RED, TINY_WIDE_FONT));
+            }
+            return scene;
+        }
+        case SceneId::WifiUnknown:
+            return {
+                std::make_shared<ClearScreen>(display),
+                std::make_shared<FlyingText>(display, "Unknown SSID", -1, 28, 0, 0, Colors::RED, TINY_WIDE_FONT)
+            };
+
+        case SceneId::WifiStopped:
+            return {
+                std::make_shared<ClearScreen>(display),
+                std::make_shared<FlyingText>(display, "WiFi Stopped", -1, 28, 0, 0, Colors::RED, TINY_WIDE_FONT)
+            };
+
+        case SceneId::Test:
+            return {
+                std::make_shared<ClearScreen>(display),
+                std::make_shared<Stars>(display),
+                std::make_shared<FunkyLine>(display, 0, 3, color565(255, 0, 0)),
+                std::make_shared<FunkyLine>(display, 5, 3, color565(255, 100, 0)),
+                std::make_shared<FunkyLine>(display, 10, 3, color565(255, 200, 100)),
+                std::make_shared<FunkyLine>(display, 15, 3, color565(255, 255, 200)),
+                std::make_shared<FunkyLine>(display, 20, 3, color565(255, 255, 255)),
+                std::make_shared<FlyingText>(display, "*", 20, 10, -2, -1, Colors::RED),
+                std::make_shared<FlyingText>(display, "+", 100, 20, 1, -2, Colors::GREEN),
+                std::make_shared<FlyingText>(display, "o", 80, 24, 2, -2, Colors::CYAN),
+                std::make_shared<ShowTime>(display, current_time, -1, -1, 0, 0, Colors::BLUE, NORMAL_FONT, true),
+                std::make_shared<Circle>(display),
+                std::make_shared<Circle>(display, 80, 20, 12, Colors::BLUE),
+                std::make_shared<ScrollText>(
+                    display,
+                    "\x20\x21\x22\x23\x24\x25\x26\x27\x28\x29\x2A\x2B\x2C\x2D\x2E\x2F"
+                    "\x30\x31\x32\x33\x34\x35\x36\x37\x38\x39\x3A\x3B\x3C\x3D\x3E\x3F"
+                    "\x40\x41\x42\x43\x44\x45\x46\x47\x48\x49\x4A\x4B\x4C\x4D\x4E\x4F"
+                    "\x50\x51\x52\x53\x54\x55\x56\x57\x58\x59\x5A\x5B\x5C\x5D\x5E\x5F"
+                    "\x60\x61\x62\x63\x64\x65\x66\x67\x68\x69\x6A\x6B\x6C\x6D\x6E\x6F"
+                    "\x70\x71\x72\x73\x74\x75\x76\x77\x78\x79\x7A\x7B\x7C\x7D\x7E\x7F"
+                    "\x80\x81    ",
+                    22, -5, Colors::RED, TINY_WIDE_FONT)
+                };
+
+
         case SceneId::NormalDays:
             return {
                 std::make_shared<ClearScreen>(display),
@@ -157,6 +230,19 @@ Scene createScene(SceneId id, MatrixPanel_I2S_DMA& display)
                 std::make_shared<ClearScreen>(display),
                 scroller,
                 std::make_shared<SnowScape>(display, 50, 10)
+            };
+
+        case SceneId::Aquatic:
+            return {
+                std::make_shared<ClearScreen>(display),
+                std::make_shared<ShowTime>(display, current_time, -1, -1, 0, 0, Colors::ORANGE, TINY_WIDE_FONT, true),
+                std::make_shared<BubblesInt>(display, 16)
+            };
+
+        case SceneId::FlamingHot:
+            return {
+                std::make_shared<ClearScreen>(display),
+                std::make_shared<Flames>(display, 5)
             };
 
         case SceneId::ChristmasDays:
@@ -174,7 +260,8 @@ Scene createScene(SceneId id, MatrixPanel_I2S_DMA& display)
                 std::make_shared<Present>(display, -15, 7, 5, Colors::WHITE, Colors::YELLOW),
                 std::make_shared<Present>(display, -35, 11, 9, Colors::PURPLE, Colors::GREEN),
                 std::make_shared<SnowScape>(display),
-                std::make_shared<FlyingText>(display, "Merry Christmas", 0, 0, 1, 1, Colors::RED)};
+                std::make_shared<FlyingText>(display, "Merry Christmas", 0, 0, 1, 1, Colors::RED)
+            };
 
         case SceneId::JanuaryDays:
             return {
@@ -198,7 +285,8 @@ Scene createScene(SceneId id, MatrixPanel_I2S_DMA& display)
                 std::make_shared<Blood>(display)
             };
 
-        case SceneId::ErikBirthday: {
+        case SceneId::Birthday:
+        {
             const int age = current_year - 2016;
             return {
                 std::make_shared<ClearScreen>(display),
@@ -234,82 +322,6 @@ Scene createScene(SceneId id, MatrixPanel_I2S_DMA& display)
                 std::make_shared<FlyingText>(display, "Happy New Year", 24, 12, 0, 0, Colors::BLUE)
             };
 
-        case SceneId::Test:
-            return {
-                std::make_shared<ClearScreen>(display),
-                std::make_shared<Stars>(display),
-                std::make_shared<FunkyLine>(display, 0, 3, color565(255, 0, 0)),
-                std::make_shared<FunkyLine>(display, 5, 3, color565(255, 100, 0)),
-                std::make_shared<FunkyLine>(display, 10, 3, color565(255, 200, 100)),
-                std::make_shared<FunkyLine>(display, 15, 3, color565(255, 255, 200)),
-                std::make_shared<FunkyLine>(display, 20, 3, color565(255, 255, 255)),
-                std::make_shared<FlyingText>(display, "*", 20, 10, -2, -1, Colors::RED),
-                std::make_shared<FlyingText>(display, "+", 100, 20, 1, -2, Colors::GREEN),
-                std::make_shared<FlyingText>(display, "o", 80, 24, 2, -2, Colors::CYAN),
-                std::make_shared<ShowTime>(display, current_time, -1, -1, 0, 0, Colors::BLUE, NORMAL_FONT, true),
-                std::make_shared<Circle>(display),
-                std::make_shared<Circle>(display, 80, 20, 12, Colors::BLUE),
-                std::make_shared<ScrollText>(
-                    display,
-                    "\x20\x21\x22\x23\x24\x25\x26\x27\x28\x29\x2A\x2B\x2C\x2D\x2E\x2F"
-                    "\x30\x31\x32\x33\x34\x35\x36\x37\x38\x39\x3A\x3B\x3C\x3D\x3E\x3F"
-                    "\x40\x41\x42\x43\x44\x45\x46\x47\x48\x49\x4A\x4B\x4C\x4D\x4E\x4F"
-                    "\x50\x51\x52\x53\x54\x55\x56\x57\x58\x59\x5A\x5B\x5C\x5D\x5E\x5F"
-                    "\x60\x61\x62\x63\x64\x65\x66\x67\x68\x69\x6A\x6B\x6C\x6D\x6E\x6F"
-                    "\x70\x71\x72\x73\x74\x75\x76\x77\x78\x79\x7A\x7B\x7C\x7D\x7E\x7F"
-                    "\x80\x81    ",
-                    22, -5, Colors::RED, TINY_WIDE_FONT
-                )
-            };
-
-        case SceneId::Welcome:
-            return {
-                std::make_shared<ClearScreen>(display),
-                std::make_shared<FlyingText>(display, "*********************", 2,  0, 0, 0, Colors::WHITE),
-                std::make_shared<FlyingText>(display, "*                   *", 2,  8, 0, 0, Colors::WHITE),
-                std::make_shared<FlyingText>(display, "-OCCATION DISPLAY-", -1, -1, 0, 0, Colors::RED),
-                std::make_shared<FlyingText>(display, "*                   *", 2, 16, 0, 0, Colors::WHITE),
-                std::make_shared<FlyingText>(display, "*********************", 2, 24, 0, 0, Colors::WHITE)
-            };
-
-        case SceneId::Connecting:
-            return {
-                std::make_shared<ClearScreen>(display),
-                std::make_shared<FlyingText>(display, "Connecting...", -1, -1, 0, 0, Colors::ORANGE, TINY_WIDE_FONT)
-            };
-
-        case SceneId::SetupAp: {
-            Scene scene = {
-                std::make_shared<ClearScreen>(display),
-                std::make_shared<FlyingText>(display, String("SSID : ") + Config::AP_SSID, 8, 13, 0, 0, Colors::WHITE),
-                std::make_shared<FlyingText>(display, String("Password : ") + Config::AP_PASSWORD, 8, 19, 0, 0, Colors::WHITE),
-                std::make_shared<FlyingText>(display, "Config : 192.168.4.1", 8, 25, 0, 0, Colors::WHITE)
-            };
-            if (wifi_err.length() > 0) {
-                scene.push_back(std::make_shared<FlyingText>(display, wifi_err, -1, 2, 0, 0, Colors::RED, TINY_WIDE_FONT));
-            }
-            return scene;
-        }
-
-        case SceneId::Aquatic:
-            return {
-                std::make_shared<ClearScreen>(display),
-                std::make_shared<ShowTime>(display, current_time, -1, -1, 0, 0, Colors::ORANGE, TINY_WIDE_FONT, true),
-                std::make_shared<BubblesInt>(display, 16)
-            };
-
-        case SceneId::WifiUnknown:
-            return {
-                std::make_shared<ClearScreen>(display),
-                std::make_shared<FlyingText>(display, "???", -1, 28, 0, 0, Colors::RED, TINY_WIDE_FONT)
-            };
-
-        case SceneId::WifiStopped:
-            return {
-                std::make_shared<ClearScreen>(display),
-                std::make_shared<FlyingText>(display, "WiFi Stopped", -1, 28, 0, 0, Colors::RED, TINY_WIDE_FONT)
-            };
-
         case SceneId::None:
         default:
             return {};
@@ -318,21 +330,16 @@ Scene createScene(SceneId id, MatrixPanel_I2S_DMA& display)
 
 void renderScene(SceneId id)
 {
-    if (id != active_scene_id || current_time.tm_year != active_scene_year) {
+    if (id != active_scene_id) {
         active_scene.clear(); // Release existing scene's RAM before allocating the next
-        active_scene      = createScene(id, *dma_display);
-        active_scene_id   = id;
-        active_scene_year = current_time.tm_year;
+        active_scene    = createScene(id, *dma_display);
+        active_scene_id = id;
     }
     active_scene.render();
 }
 
-SceneId selectDateScene(const tm& t, bool isTestMode)
+SceneId selectDateScene(const tm& t)
 {
-    if (isTestMode) {
-        return SceneId::Test;
-    }
-
     const int month = t.tm_mon + 1;
     const int day   = t.tm_mday;
     const int hours = t.tm_hour;
@@ -344,7 +351,7 @@ SceneId selectDateScene(const tm& t, bool isTestMode)
         (month == 11 && day == 1 && hours < 8)) return SceneId::Halloween;
     if (month == 11)                          return SceneId::JustSnow;
     if (month == 12 && day == 24)             return SceneId::ChristmasEve;
-    if (month == 12 && day == 30)             return SceneId::ErikBirthday;
+    if (month == 12 && day == 30)             return SceneId::Birthday;
     if (month == 12 && day == 31)             return SceneId::NewYearsDay;
     if (month == 12)                          return SceneId::ChristmasDays;
 
@@ -362,7 +369,7 @@ void startAccessPoint(const char* reason)
     WiFi.mode(WIFI_AP);
     WiFi.softAP(Config::AP_SSID, Config::AP_PASSWORD, 1, false, 1);
     is_ap = true;
-    active_scene_id = SceneId::None; // Force SetupAp rebuild so wifi_err is shown
+    active_scene_id = SceneId::None;
 }
 
 void connectStation()
@@ -382,6 +389,12 @@ void handleRootHttp()
     String html = R"raw(<!DOCTYPE html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><title>Occasion Display</title></head><body>)raw";
     if (wifi_err.length() > 0) {
         html += "<p style='color:red;'><b>Last Wi-Fi error:</b> " + wifi_err + "</p>";
+    }
+    if (Weather::isValid()) {
+        html += "<p><b>Current Weather (" + Weather::city() + "):</b> " +
+                String(Weather::conditionName()) + " (" + String(Weather::temperature(), 1) + " &deg;C)</p>";
+    } else {
+        html += "<p><b>Current Weather:</b> Fetching...</p>";
     }
     html += R"raw(
     <h2>Enter scroll text:</h2>
@@ -478,59 +491,29 @@ void handleWifiHttp()
     connectStation();
 }
 
-void updateAndRenderWifiState()
+SceneId checkWifiState()
 {
     switch (WiFi.status())
     {
-        case WL_CONNECTED: {
-            const time_t now = time(nullptr);
-            localtime_r(&now, &current_time);
-
-            renderScene(selectDateScene(current_time, test_mode));
-
-            if (show_ip)
-            {
-                const IPAddress ip = WiFi.localIP();
-                if (!ip_overlay || ip != cached_ip) {
-                    cached_ip  = ip;
-                    ip_overlay = std::unique_ptr<FlyingText>(
-                        new FlyingText(*dma_display, ip.toString(), -1, 0, 0, 0, Colors::GREEN, TINY_WIDE_FONT)
-                    );
-                }
-                ip_overlay->render();
-            }
-            break;
-        }
-
-        case WL_IDLE_STATUS:
-            renderScene(SceneId::Welcome);
-            break;
-
+        case WL_CONNECTED:      return SceneId::None;
+        case WL_IDLE_STATUS:    return SceneId::Welcome;
         case WL_NO_SSID_AVAIL:
             startAccessPoint("Couldn't find SSID");
-            break;
+            return SceneId::SetupAp;
 
         case WL_CONNECT_FAILED:
             startAccessPoint("Bad password!");
-            break;
+            return SceneId::SetupAp;
 
         case WL_CONNECTION_LOST:
             startAccessPoint("Connection lost!");
-            break;
-
-        case WL_DISCONNECTED:
-            renderScene(SceneId::Connecting);
-            break;
-
+            return SceneId::SetupAp;
+        case WL_DISCONNECTED:   return SceneId::Connecting;
         case WL_NO_SHIELD:
-        case WL_SCAN_COMPLETED:
-            renderScene(SceneId::WifiUnknown);
-            break;
-
-        case WL_STOPPED:
-            renderScene(SceneId::WifiStopped);
-            break;
+        case WL_SCAN_COMPLETED: return SceneId::WifiUnknown;
+        case WL_STOPPED:        return SceneId::WifiStopped;
     }
+    return SceneId::None;
 }
 
 } // namespace
@@ -544,7 +527,6 @@ void setup()
     delay(1000);
     pinMode(Config::LED_PIN, OUTPUT);
     pinMode(Config::PIN_R1, OUTPUT);
-    Serial.println("HELLO!");
 
     // Initialize time structure
     const time_t initial_epoch = 0;
@@ -576,7 +558,7 @@ void setup()
     mxconfig.min_refresh_rate = 120;
     mxconfig.clkphase         = false;
     mxconfig.latch_blanking   = 2;
-    mxconfig.i2sspeed         = HUB75_I2S_CFG::HZ_10M;
+//    mxconfig.i2sspeed         = HUB75_I2S_CFG::HZ_10M;
 
     dma_display.reset(new MatrixPanel_I2S_DMA(mxconfig));
     dma_display->begin();
@@ -600,11 +582,14 @@ void setup()
     scroller = std::make_shared<ScrollText>(
         *dma_display,
         scroll_text,
-        6, -10, Colors::RED, TINY_WIDE_FONT
+        6, -10, Colors::RED, FontId::TINY_WIDE_FONT
     );
 
     // Configure native ESP32 SNTP with automatic CET/CEST Daylight Saving Time
     configTzTime(Config::TZ_INFO, Config::NTP_SERVER);
+
+    // Start background weather polling task on Core 0
+    Weather::begin();
 
     // Start Wi-Fi & Web Server
     connectStation();
@@ -618,6 +603,27 @@ void setup()
     Serial.println("Start...");
 }
 
+void BlinkLed(uint32_t frame_start, bool overloaded)
+{
+    static uint32_t last_led_toggle = 0;
+    static bool led_on = false;
+
+    if (!overloaded) {
+        if (led_on) {
+            led_on = false;
+            rgbLedWrite(Config::LED_PIN, 0, 0, 0);
+        }
+        return;
+    }
+
+    if (frame_start - last_led_toggle >= 200)
+    {
+        last_led_toggle = frame_start;
+        led_on = !led_on;
+        rgbLedWrite(Config::LED_PIN, led_on ? 30 : 0, 0, 0);
+    }
+}
+
 // =========================================================================
 // Main Loop (~25 FPS)
 // =========================================================================
@@ -626,27 +632,42 @@ void loop()
     const uint32_t frame_start = millis();
 
     if (is_ap) {
+        // We are the Access Point (Show scene that displays connect info)
         renderScene(SceneId::SetupAp);
-    } else {
-        updateAndRenderWifiState();
+    } else if( SceneId id = checkWifiState(); id != SceneId::None){
+        // We are trying to connect to an Access Point show scenes about how it is going
+        renderScene(id);
+    }else{
+        // We are connected to an Access Point, we are good to show scenes 
+        const time_t now = time(nullptr);
+        localtime_r(&now, &current_time);
+        if (test_mode)
+        {
+            renderScene(SceneId::Test);
+        }else{
+            renderScene(selectDateScene(current_time));
+        }
+        if (show_ip)
+        {
+            const IPAddress ip = WiFi.localIP();
+            if (!ip_overlay || ip != cached_ip)
+            {
+                cached_ip = ip;
+                ip_overlay = std::unique_ptr<FlyingText>(new FlyingText(*dma_display, ip.toString(), -1, 0, 0, 0, Colors::GREEN, TINY_WIDE_FONT));
+            }
+            ip_overlay->render();
+        }
     }
 
     dma_display->flipDMABuffer();
     server.handleClient();
 
-    static uint32_t last_led_toggle = 0;
-    static bool led_on = false;
-    if (frame_start - last_led_toggle >= 300)
-    {
-        last_led_toggle = frame_start;
-        led_on = !led_on;
-        rgbLedWrite(Config::LED_PIN, led_on ? 30 : 0, 0, 0);
-    }
-
     const uint32_t elapsed = millis() - frame_start;
     if (elapsed < Config::FRAME_TIME_MS) {
+        BlinkLed(frame_start, false);
         delay(Config::FRAME_TIME_MS - elapsed);
     }else{
         Serial.println("Rendering took too long");
+        BlinkLed(frame_start, true);
     }
 }

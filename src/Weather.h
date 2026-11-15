@@ -1,0 +1,231 @@
+#pragma once
+
+#include <Arduino.h>
+#include <WiFi.h>
+#include <atomic>
+#include <cstdlib>
+#include <cstring>
+
+enum class WeatherCondition : uint8_t {
+    Unknown = 0,
+    Sunny,
+    Cloudy,
+    Rainy,
+    Snow,
+    Hail
+};
+
+namespace Weather {
+
+namespace Detail {
+    inline std::atomic<WeatherCondition> s_condition{WeatherCondition::Unknown};
+    inline std::atomic<int>              s_wmo_code{-1};
+    inline std::atomic<float>            s_temperature{0.0f};
+    inline std::atomic<bool>             s_valid{false};
+    inline bool                          s_geo_resolved = false;
+    inline float                         s_lat          = 56.15f; // Default fallback (Denmark)
+    inline float                         s_lon          = 10.21f;
+    inline String                        s_city         = "Default";
+
+    inline WeatherCondition mapWmoCode(int code)
+    {
+        if (code == 0 || code == 1) {
+            return WeatherCondition::Sunny;
+        }
+        if (code == 2 || code == 3 || code == 45 || code == 48) {
+            return WeatherCondition::Cloudy;
+        }
+        if ((code >= 51 && code <= 67) || (code >= 80 && code <= 82)) {
+            return WeatherCondition::Rainy;
+        }
+        if ((code >= 71 && code <= 77) || code == 85 || code == 86) {
+            return WeatherCondition::Snow;
+        }
+        if (code == 95 || code == 96 || code == 99) {
+            return WeatherCondition::Hail;
+        }
+        return WeatherCondition::Unknown;
+    }
+
+    // Performs a lightweight HTTP/1.0 GET request and returns the response body
+    inline bool httpGetBody(const char* host, const String& path, char* outBuf, size_t outSize)
+    {
+        WiFiClient client;
+        client.setTimeout(5);
+        if (!client.connect(host, 80)) {
+            return false;
+        }
+
+        client.printf("GET %s HTTP/1.0\r\nHost: %s\r\nConnection: close\r\n\r\n", path.c_str(), host);
+
+        uint32_t start = millis();
+        while (!client.available() && client.connected()) {
+            if (millis() - start > 5000) {
+                client.stop();
+                return false;
+            }
+            vTaskDelay(pdMS_TO_TICKS(20));
+        }
+
+        // Skip HTTP headers until blank line (\r\n\r\n)
+        bool headersEnded = client.find("\r\n\r\n");
+        if (!headersEnded) {
+            client.stop();
+            return false;
+        }
+
+        size_t idx = 0;
+        while ((client.connected() || client.available()) && idx < outSize - 1) {
+            if (client.available()) {
+                outBuf[idx++] = static_cast<char>(client.read());
+            } else {
+                vTaskDelay(pdMS_TO_TICKS(10));
+            }
+        }
+        outBuf[idx] = '\0';
+        client.stop();
+        return idx > 0;
+    }
+
+    inline void resolveLocationFromIp()
+    {
+        char body[160];
+        if (!httpGetBody("ip-api.com", "/csv/?fields=status,lat,lon,city", body, sizeof(body))) {
+            return;
+        }
+        // Expected CSV format: "success,57.0488,9.9217,Aalborg\n"
+        if (strncmp(body, "success,", 8) != 0) {
+            return;
+        }
+        char* p1 = body + 8;
+        char* p2 = strchr(p1, ',');
+        if (!p2) return;
+        *p2++ = '\0';
+
+        char* p3 = strchr(p2, ',');
+        if (!p3) return;
+        *p3++ = '\0';
+
+        char* nl = strpbrk(p3, "\r\n");
+        if (nl) *nl = '\0';
+
+        const float lat = strtof(p1, nullptr);
+        const float lon = strtof(p2, nullptr);
+        if (lat != 0.0f || lon != 0.0f) {
+            s_lat          = lat;
+            s_lon          = lon;
+            s_city         = p3;
+            s_geo_resolved = true;
+            Serial.printf("Weather location resolved: %s (%.4f, %.4f)\n", s_city.c_str(), s_lat, s_lon);
+        }
+    }
+
+    inline bool fetchOpenMeteo()
+    {
+        String path = "/v1/forecast?latitude=" + String(s_lat, 4) +
+                      "&longitude=" + String(s_lon, 4) +
+                      "&current=weather_code,temperature_2m";
+
+        char body[512];
+        if (!httpGetBody("api.open-meteo.com", path, body, sizeof(body))) {
+            return false;
+        }
+
+        // Locate the "current":{...} object at the end of the JSON response
+        const char* curObj = strstr(body, "\"current\":{");
+        if (!curObj) {
+            return false;
+        }
+
+        const char* codePtr = strstr(curObj, "\"weather_code\":");
+        const char* tempPtr = strstr(curObj, "\"temperature_2m\":");
+        if (!codePtr || !tempPtr) {
+            return false;
+        }
+
+        const int   code = static_cast<int>(strtol(codePtr + 15, nullptr, 10));
+        const float temp = strtof(tempPtr + 17, nullptr);
+
+        s_wmo_code.store(code, std::memory_order_relaxed);
+        s_temperature.store(temp, std::memory_order_relaxed);
+        s_condition.store(mapWmoCode(code), std::memory_order_relaxed);
+        s_valid.store(true, std::memory_order_release);
+
+        Serial.printf("Weather updated: WMO=%d, %.1f C\n", code, temp);
+        return true;
+    }
+
+    inline void weatherTask(void*)
+    {
+        constexpr uint32_t POLL_INTERVAL_MS = 15UL * 60UL * 1000UL; // 15 minutes
+        constexpr uint32_t RETRY_INTERVAL_MS = 30UL * 1000UL;       // 30 seconds on failure
+
+        for (;;) {
+            if (WiFi.status() == WL_CONNECTED) {
+                if (!s_geo_resolved) {
+                    resolveLocationFromIp();
+                }
+                if (fetchOpenMeteo()) {
+                    vTaskDelay(pdMS_TO_TICKS(POLL_INTERVAL_MS));
+                    continue;
+                }
+                vTaskDelay(pdMS_TO_TICKS(RETRY_INTERVAL_MS));
+            } else {
+                vTaskDelay(pdMS_TO_TICKS(2000));
+            }
+        }
+    }
+} // namespace Detail
+
+inline void begin()
+{
+    xTaskCreatePinnedToCore(
+        Detail::weatherTask,
+        "weather_task",
+        4096,
+        nullptr,
+        1,
+        nullptr,
+        0 // Run on Core 0 (Wi-Fi/system core) so Core 1 matrix rendering never stutters
+    );
+}
+
+inline WeatherCondition condition()
+{
+    return Detail::s_condition.load(std::memory_order_relaxed);
+}
+
+inline float temperature()
+{
+    return Detail::s_temperature.load(std::memory_order_relaxed);
+}
+
+inline int wmoCode()
+{
+    return Detail::s_wmo_code.load(std::memory_order_relaxed);
+}
+
+inline bool isValid()
+{
+    return Detail::s_valid.load(std::memory_order_acquire);
+}
+
+inline const String& city()
+{
+    return Detail::s_city;
+}
+
+inline const char* conditionName(WeatherCondition c = condition())
+{
+    switch (c) {
+        case WeatherCondition::Sunny:  return "Sunny";
+        case WeatherCondition::Cloudy: return "Cloudy";
+        case WeatherCondition::Rainy:  return "Rainy";
+        case WeatherCondition::Snow:   return "Snow";
+        case WeatherCondition::Hail:   return "Hail";
+        case WeatherCondition::Unknown:
+        default:                       return "Unknown";
+    }
+}
+
+} // namespace Weather

@@ -6,7 +6,7 @@ class FlyingText : public Effect
 {
 
 public:
-	FlyingText(Adafruit_GFX &matrix, String text, int16_t x=0, int16_t y=0, int16_t dx=1, int16_t dy=1, uint16_t color = 0xFFFF, uint8_t font=0);
+	FlyingText(Adafruit_GFX &matrix, String text, int16_t x = 0, int16_t y = 0, int16_t dx = 1, int16_t dy = 1, uint16_t color = 0xFFFF, uint8_t font = FontId::NORMAL_FONT);
 	void render();
 
 protected:
