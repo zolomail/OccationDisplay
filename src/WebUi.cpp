@@ -49,7 +49,8 @@ constexpr SceneOption SCENE_OPTIONS[] = {
     { SceneId::ChristmasDays,    "ChristmasDays"    },
     { SceneId::NormalDays,       "NormalDays"       },
     { SceneId::FlamingHot,       "FlamingHot"       },
-    { SceneId::WaterEffect,      "WaterEffect"      }
+    { SceneId::WaterEffect,      "WaterEffect"      },
+    { SceneId::BumpMapEffect,    "BumpMapEffect"    }
 };
 
 void connectStation()
@@ -148,7 +149,7 @@ void handleOptionsHttp()
 {
     if (server.hasArg("scene_id")) {
         const int id = server.arg("scene_id").toInt();
-        if (id >= static_cast<int>(SceneId::None) && id <= static_cast<int>(SceneId::WaterEffect)) {
+        if (id >= static_cast<int>(SceneId::None) && id <= static_cast<int>(SceneId::BumpMapEffect)) {
             selected_scene = static_cast<SceneId>(id);
         }
     }

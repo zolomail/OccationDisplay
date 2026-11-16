@@ -27,6 +27,7 @@
 #include "effects/Flames.h"
 #include "effects/WeatherOverlay.h"
 #include "effects/WaveSim.h"
+#include "effects/BumpMap.h"
 
 #include "bitmaps/ufo.h"
 #include "bitmaps/pumpkin.h"
@@ -208,6 +209,11 @@ Scene createScene(SceneId id, MatrixPanel_I2S_DMA& display)
         case SceneId::WaterEffect:
             return {
                 std::make_shared<WaveSim>(display, 5, true)
+            };
+
+        case SceneId::BumpMapEffect:
+            return {
+                std::make_shared<BumpMap>(display, Colors::ORANGE, "OCCATION", false)
             };
 
         case SceneId::ChristmasDays:
