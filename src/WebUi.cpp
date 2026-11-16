@@ -52,7 +52,8 @@ constexpr SceneOption SCENE_OPTIONS[] = {
     { SceneId::WaterEffect,      "WaterEffect"      },
     { SceneId::BumpMapEffect,    "BumpMapEffect"    },
     { SceneId::HeartsEffect,     "HeartsEffect"     },
-    { SceneId::CubeEffect,       "CubeEffect"       }
+    { SceneId::CubeEffect,       "CubeEffect"       },
+    { SceneId::WebUiQr,          "WebUiQr"          }
 };
 
 void connectStation()
@@ -151,7 +152,7 @@ void handleOptionsHttp()
 {
     if (server.hasArg("scene_id")) {
         const int id = server.arg("scene_id").toInt();
-        if (id >= static_cast<int>(SceneId::None) && id <= static_cast<int>(SceneId::CubeEffect)) {
+        if (id >= static_cast<int>(SceneId::None) && id <= static_cast<int>(SceneId::WebUiQr)) {
             selected_scene = static_cast<SceneId>(id);
         }
     }

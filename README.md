@@ -29,3 +29,6 @@ Scroller and occation animation display on multiple 64x32 led segment displays u
         Sankt Hans
         Mortens Aften
         Wedding days
+
+    5: Custom scenes
+    6: Show events from calendar (eg google calendar)

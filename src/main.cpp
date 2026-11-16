@@ -30,6 +30,7 @@
 #include "effects/BumpMap.h"
 #include "effects/Hearts.h"
 #include "effects/Cube3D.h"
+#include "effects/QrCode.h"
 
 #include "bitmaps/ufo.h"
 #include "bitmaps/pumpkin.h"
@@ -231,6 +232,17 @@ Scene createScene(SceneId id, MatrixPanel_I2S_DMA& display)
                 std::make_shared<Stars>(display, 25),
                 std::make_shared<Cube3D>(display, 8.5f, false)
             };
+
+        case SceneId::WebUiQr:
+        {
+            const String ip_str = WiFi.localIP().toString();
+            return {
+                std::make_shared<ClearScreen>(display),
+                std::make_shared<QrCode>(display, "http://" + ip_str + "/", 2, -1),
+                std::make_shared<FlyingText>(display, "SCAN FOR WEB UI", 34, 8, 0, 0, Colors::CYAN, TINY_WIDE_FONT),
+                std::make_shared<FlyingText>(display, ip_str, 34, 18, 0, 0, Colors::WHITE, TINY_WIDE_FONT)
+            };
+        }
 
         case SceneId::ChristmasDays:
             return {

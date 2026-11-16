@@ -26,7 +26,8 @@ enum class SceneId : uint8_t {
 	WaterEffect,
 	BumpMapEffect,
 	HeartsEffect,
-	CubeEffect
+	CubeEffect,
+	WebUiQr
 };
 
 class Scene : public std::vector<std::shared_ptr<Effect>>
