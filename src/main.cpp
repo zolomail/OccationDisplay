@@ -238,9 +238,9 @@ Scene createScene(SceneId id, MatrixPanel_I2S_DMA& display)
             const String ip_str = WiFi.localIP().toString();
             return {
                 std::make_shared<ClearScreen>(display),
-                std::make_shared<QrCode>(display, "http://" + ip_str + "/", 2, -1),
-                std::make_shared<FlyingText>(display, "SCAN FOR WEB UI", 34, 8, 0, 0, Colors::CYAN, TINY_WIDE_FONT),
-                std::make_shared<FlyingText>(display, ip_str, 34, 18, 0, 0, Colors::WHITE, TINY_WIDE_FONT)
+                std::make_shared<QrCode>(display, "https://" + ip_str + "/", 2, -1),
+                std::make_shared<FlyingText>(display, "SCAN FOR WEB UI", 33, 8, 0, 0, Colors::CYAN, TINY_WIDE_FONT),
+                std::make_shared<FlyingText>(display, ip_str, 33, 18, 0, 0, Colors::WHITE, TINY_WIDE_FONT)
             };
         }
 

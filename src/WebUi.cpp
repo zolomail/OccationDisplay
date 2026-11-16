@@ -1,8 +1,8 @@
 #include "WebUi.h"
 
 #include <WiFi.h>
-#include <WebServer.h>
 #include <Preferences.h>
+#include <esp_https_server.h>
 #include "Weather.h"
 
 namespace WebUi {
@@ -17,8 +17,30 @@ constexpr char DEFAULT_PASS[]   = "limfjordenerblaa";
 constexpr char DEFAULT_SCROLL[] = "put your text here now --- \x80\x80\x80 --- ";
 constexpr char PREFS_NS[]       = "display";
 
-WebServer   server(80);
-Preferences prefs;
+// Self-signed EC P-256 certificate and private key (valid 2024-2036)
+constexpr char SERVER_CERT_PEM[] =
+"-----BEGIN CERTIFICATE-----\n"
+"MIIBijCCAS+gAwIBAgIUWauMClxQZR/PrMx0v2Z0p8yVe4MwCgYIKoZIzj0EAwIw\n"
+"GjEYMBYGA1UEAwwPT2NjYXNpb25EaXNwbGF5MB4XDTI0MDEwMTAwMDAwMFoXDTM2\n"
+"MTIzMTIzNTk1OVowGjEYMBYGA1UEAwwPT2NjYXNpb25EaXNwbGF5MFkwEwYHKoZI\n"
+"zj0CAQYIKoZIzj0DAQcDQgAEWuuR9ZkUr70dzqrY48M7ZunMPk2A16c7priI+ZPN\n"
+"1kwkJgyvFijzoI4sjsRKlWqIbU4x2BFogXE7ZlI+IF77eKNTMFEwHQYDVR0OBBYE\n"
+"FA/SkZIXqckLBgjf1EF3QCXW9Kq6MB8GA1UdIwQYMBaAFA/SkZIXqckLBgjf1EF3\n"
+"QCXW9Kq6MA8GA1UdEwEB/wQFMAMBAf8wCgYIKoZIzj0EAwIDSQAwRgIhAPw/etHy\n"
+"S3OOJ3t/Z/enObB/4USonwZ45CnGvz+uucUNAiEA8AnoGFW2m9/Avft9EgDBJ/xF\n"
+"9r4vbEiuaYjRabHwdxI=\n"
+"-----END CERTIFICATE-----\n";
+
+constexpr char SERVER_KEY_PEM[] =
+"-----BEGIN PRIVATE KEY-----\n"
+"MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgNcOfxtNNvnNoLGgg\n"
+"7RtJNXXI94b8FdQbjFmDtAMAMt+hRANCAARa65H1mRSvvR3Oqtjjwztm6cw+TYDX\n"
+"pzumuIj5k83WTCQmDK8WKPOgjiyOxEqVaohtTjHYEWiBcTtmUj4gXvt4\n"
+"-----END PRIVATE KEY-----\n";
+
+httpd_handle_t http_server  = nullptr;
+httpd_handle_t https_server = nullptr;
+Preferences    prefs;
 
 String wifi_ssid     = DEFAULT_SSID;
 String wifi_password = DEFAULT_PASS;
@@ -65,8 +87,80 @@ void connectStation()
     WiFi.begin(wifi_ssid.c_str(), wifi_password.c_str());
 }
 
+int hexVal(char c)
+{
+    if (c >= '0' && c <= '9') return c - '0';
+    if (c >= 'a' && c <= 'f') return c - 'a' + 10;
+    if (c >= 'A' && c <= 'F') return c - 'A' + 10;
+    return -1;
+}
+
+String urlDecode(const String& str)
+{
+    String out;
+    out.reserve(str.length());
+    for (size_t i = 0; i < str.length(); ++i) {
+        const char c = str[i];
+        if (c == '+') {
+            out += ' ';
+        } else if (c == '%' && i + 2 < str.length()) {
+            const int hi = hexVal(str[i + 1]);
+            const int lo = hexVal(str[i + 2]);
+            if (hi >= 0 && lo >= 0) {
+                out += static_cast<char>((hi << 4) | lo);
+                i += 2;
+            } else {
+                out += c;
+            }
+        } else {
+            out += c;
+        }
+    }
+    return out;
+}
+
+bool getFormArg(const String& body, const char* key, String& outVal)
+{
+    const String prefix = String(key) + "=";
+    int pos = 0;
+    while (pos < static_cast<int>(body.length())) {
+        int amp = body.indexOf('&', pos);
+        if (amp < 0) amp = body.length();
+        const String pair = body.substring(pos, amp);
+        if (pair.startsWith(prefix)) {
+            outVal = urlDecode(pair.substring(prefix.length()));
+            return true;
+        }
+        pos = amp + 1;
+    }
+    return false;
+}
+
+String readRequestBody(httpd_req_t* req)
+{
+    const size_t len = req->content_len;
+    if (len == 0 || len > 1024) {
+        return "";
+    }
+    String buf;
+    buf.reserve(len);
+    char tmp[128];
+    size_t remaining = len;
+    while (remaining > 0) {
+        const int to_read = (remaining < sizeof(tmp) - 1) ? static_cast<int>(remaining) : static_cast<int>(sizeof(tmp) - 1);
+        const int ret = httpd_req_recv(req, tmp, to_read);
+        if (ret <= 0) {
+            break;
+        }
+        tmp[ret] = '\0';
+        buf += tmp;
+        remaining -= static_cast<size_t>(ret);
+    }
+    return buf;
+}
+
 // GET /
-void handleRootHttp()
+esp_err_t handleRootHttp(httpd_req_t* req)
 {
     String html = R"raw(<!DOCTYPE html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><title>Occasion Display</title></head><body>)raw";
     if (wifi_err.length() > 0) {
@@ -130,13 +224,18 @@ void handleRootHttp()
     </script>
     </body></html>)raw";
 
-    server.send(200, "text/html", html);
+    httpd_resp_set_type(req, "text/html");
+    return httpd_resp_send(req, html.c_str(), html.length());
 }
 
 // POST /scroller
-void handleScrollerHttp()
+esp_err_t handleScrollerHttp(httpd_req_t* req)
 {
-    const String text = server.arg("text").length() > 0 ? server.arg("text") : server.arg(0);
+    const String body = readRequestBody(req);
+    String text;
+    if (!getFormArg(body, "text", text)) {
+        text = urlDecode(body);
+    }
     scroll_text = text;
     scene_dirty = true;
 
@@ -144,44 +243,73 @@ void handleScrollerHttp()
     prefs.putString("scroll", scroll_text);
     prefs.end();
 
-    server.send(200, "text/plain", "OK");
+    httpd_resp_set_type(req, "text/plain");
+    return httpd_resp_send(req, "OK", 2);
 }
 
 // POST /options
-void handleOptionsHttp()
+esp_err_t handleOptionsHttp(httpd_req_t* req)
 {
-    if (server.hasArg("scene_id")) {
-        const int id = server.arg("scene_id").toInt();
+    const String body = readRequestBody(req);
+    String val;
+    if (getFormArg(body, "scene_id", val)) {
+        const int id = val.toInt();
         if (id >= static_cast<int>(SceneId::None) && id <= static_cast<int>(SceneId::WebUiQr)) {
             selected_scene = static_cast<SceneId>(id);
         }
     }
-    if (server.hasArg("show_ip")) {
-        show_ip = (server.arg("show_ip") == "1");
+    if (getFormArg(body, "show_ip", val)) {
+        show_ip = (val == "1");
     }
-    server.send(200, "text/plain", "OK");
+
+    httpd_resp_set_type(req, "text/plain");
+    return httpd_resp_send(req, "OK", 2);
 }
 
 // POST /wifi
-void handleWifiHttp()
+esp_err_t handleWifiHttp(httpd_req_t* req)
 {
+    const String body = readRequestBody(req);
+    String ssid_val;
+    String pass_val;
+
     prefs.begin(PREFS_NS, false);
-    if (server.hasArg("ssid") && server.arg("ssid").length() > 0) {
-        wifi_ssid = server.arg("ssid");
+    if (getFormArg(body, "ssid", ssid_val) && ssid_val.length() > 0) {
+        wifi_ssid = ssid_val;
         prefs.putString("ssid", wifi_ssid);
     }
-    if (server.hasArg("pass") && server.arg("pass").length() > 0) {
-        wifi_password = server.arg("pass");
+    if (getFormArg(body, "pass", pass_val) && pass_val.length() > 0) {
+        wifi_password = pass_val;
         prefs.putString("pass", wifi_password);
     }
     prefs.end();
 
     wifi_err = "";
-    server.send(200, "text/html",
+    const String resp =
         "<!DOCTYPE html><html><body><p>Saved! Connecting to <b>" + wifi_ssid +
-        "</b>...</p><p><a href='/'>Back</a></p></body></html>");
+        "</b>...</p><p><a href='/'>Back</a></p></body></html>";
+
+    httpd_resp_set_type(req, "text/html");
+    httpd_resp_send(req, resp.c_str(), resp.length());
+
     delay(200);
     connectStation();
+    return ESP_OK;
+}
+
+void registerRoutes(httpd_handle_t srv)
+{
+    if (!srv) return;
+
+    const httpd_uri_t root_uri     = { "/",         HTTP_GET,  handleRootHttp,     nullptr };
+    const httpd_uri_t scroller_uri = { "/scroller", HTTP_POST, handleScrollerHttp, nullptr };
+    const httpd_uri_t options_uri  = { "/options",  HTTP_POST, handleOptionsHttp,  nullptr };
+    const httpd_uri_t wifi_uri     = { "/wifi",     HTTP_POST, handleWifiHttp,     nullptr };
+
+    httpd_register_uri_handler(srv, &root_uri);
+    httpd_register_uri_handler(srv, &scroller_uri);
+    httpd_register_uri_handler(srv, &options_uri);
+    httpd_register_uri_handler(srv, &wifi_uri);
 }
 
 } // namespace
@@ -197,16 +325,36 @@ void begin()
 
     connectStation();
 
-    server.on("/", HTTP_GET, handleRootHttp);
-    server.on("/scroller", HTTP_POST, handleScrollerHttp);
-    server.on("/options", HTTP_POST, handleOptionsHttp);
-    server.on("/wifi", HTTP_POST, handleWifiHttp);
-    server.begin();
+    // 1. Start plain HTTP server on port 80 (pinned to Core 0)
+    httpd_config_t http_cfg = HTTPD_DEFAULT_CONFIG();
+    http_cfg.server_port      = 80;
+    http_cfg.ctrl_port        = 32768;
+    http_cfg.core_id          = 0;
+    http_cfg.lru_purge_enable = true;
+    if (httpd_start(&http_server, &http_cfg) == ESP_OK) {
+        registerRoutes(http_server);
+        Serial.println("HTTP server started on port 80");
+    }
+
+    // 2. Start HTTPS (TLS) server on port 443 (pinned to Core 0)
+    httpd_ssl_config_t https_cfg = HTTPD_SSL_CONFIG_DEFAULT();
+    https_cfg.port_secure      = 443;
+    https_cfg.httpd.ctrl_port  = 32769;
+    https_cfg.httpd.core_id    = 0;
+    https_cfg.httpd.max_open_sockets = 2;
+    https_cfg.servercert       = reinterpret_cast<const uint8_t*>(SERVER_CERT_PEM);
+    https_cfg.servercert_len   = sizeof(SERVER_CERT_PEM);
+    https_cfg.prvtkey_pem      = reinterpret_cast<const uint8_t*>(SERVER_KEY_PEM);
+    https_cfg.prvtkey_len      = sizeof(SERVER_KEY_PEM);
+    if (httpd_ssl_start(&https_server, &https_cfg) == ESP_OK) {
+        registerRoutes(https_server);
+        Serial.println("HTTPS server started on port 443");
+    }
 }
 
 void handleClient()
 {
-    server.handleClient();
+    // Both HTTP and HTTPS servers run asynchronously in background FreeRTOS tasks on Core 0
 }
 
 void startAccessPoint(const char* reason)
