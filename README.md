@@ -2,11 +2,30 @@
 Scroller and occation animation display on multiple 64x32 led segment displays using ESP32-S3 SuperMini
 
 #TODO:
-    Add user configurable scenes (replace selectDateScene ) the following should be specified:
+    1: On the webUi make it so when selecting a scene to show the user should be able to configure the parameters:
+        Scroll text(s)
+        Scroll position and speed
+        Colors
+        Fonts
+        etc.
+
+    2: Add user configurable scenes (replace selectDateScene ) the following should be specified:
         which scene
         start: month, day, hour
         end:   month, day, hour
         input: scroll or bounce texts ("Merry Christmas", "Happy Newyear", )
                 Year of birth, for calculating age for birthdays
                 Colors / fonts
-    Figure out how we incorporate weather...
+
+    3: More effects:
+        Animated sprites (fish, birds)
+        Christmas tree
+
+    4: More Scenes
+        Full screen weather
+        Easter
+        Saint Patrics
+        April fools
+        Sankt Hans
+        Mortens Aften
+        Wedding days

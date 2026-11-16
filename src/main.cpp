@@ -29,6 +29,7 @@
 #include "effects/WaveSim.h"
 #include "effects/BumpMap.h"
 #include "effects/Hearts.h"
+#include "effects/Cube3D.h"
 
 #include "bitmaps/ufo.h"
 #include "bitmaps/pumpkin.h"
@@ -222,6 +223,13 @@ Scene createScene(SceneId id, MatrixPanel_I2S_DMA& display)
                 std::make_shared<ClearScreen>(display),
                 std::make_shared<ShowTime>(display, current_time, -1, -1, 0, 0, Colors::PURPLE, TINY_WIDE_FONT, true),
                 std::make_shared<Hearts>(display, 16)
+            };
+
+        case SceneId::CubeEffect:
+            return {
+                std::make_shared<ClearScreen>(display),
+                std::make_shared<Stars>(display, 25),
+                std::make_shared<Cube3D>(display, 8.5f, false)
             };
 
         case SceneId::ChristmasDays:

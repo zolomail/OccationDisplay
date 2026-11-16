@@ -25,7 +25,8 @@ enum class SceneId : uint8_t {
 	FlamingHot,
 	WaterEffect,
 	BumpMapEffect,
-	HeartsEffect
+	HeartsEffect,
+	CubeEffect
 };
 
 class Scene : public std::vector<std::shared_ptr<Effect>>
