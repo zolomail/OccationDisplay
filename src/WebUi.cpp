@@ -27,6 +27,7 @@ String wifi_err      = "";
 
 bool    is_ap          = false;
 bool    show_ip        = true;
+bool    scene_dirty    = false;
 SceneId selected_scene = SceneId::None;
 
 struct SceneOption {
@@ -50,8 +51,6 @@ constexpr SceneOption SCENE_OPTIONS[] = {
     { SceneId::FlamingHot,       "FlamingHot"       },
     { SceneId::WaterEffect,      "WaterEffect"      }
 };
-
-std::shared_ptr<ScrollText> scroller_ref;
 
 void connectStation()
 {
@@ -135,9 +134,7 @@ void handleScrollerHttp()
 {
     const String text = server.arg("text").length() > 0 ? server.arg("text") : server.arg(0);
     scroll_text = text;
-    if (scroller_ref) {
-        scroller_ref->setText(scroll_text);
-    }
+    scene_dirty = true;
 
     prefs.begin(PREFS_NS, false);
     prefs.putString("scroll", scroll_text);
@@ -185,20 +182,14 @@ void handleWifiHttp()
 
 } // namespace
 
-void begin(std::shared_ptr<ScrollText> scroller)
+void begin()
 {
-    scroller_ref = std::move(scroller);
-
     // Load persisted settings from NVS flash (survives reflashing)
     prefs.begin(PREFS_NS, true);
     wifi_ssid     = prefs.getString("ssid", DEFAULT_SSID);
     wifi_password = prefs.getString("pass", DEFAULT_PASS);
     scroll_text   = prefs.getString("scroll", DEFAULT_SCROLL);
     prefs.end();
-
-    if (scroller_ref) {
-        scroller_ref->setText(scroll_text);
-    }
 
     connectStation();
 
@@ -224,11 +215,13 @@ void startAccessPoint(const char* reason)
     is_ap = true;
 }
 
-bool isApMode()          { return is_ap; }
-SceneId selectedScene()  { return selected_scene; }
-bool showIp()            { return show_ip; }
-const String& wifiError(){ return wifi_err; }
-const char* apSsid()     { return AP_SSID; }
-const char* apPassword() { return AP_PASSWORD; }
+bool isApMode()            { return is_ap; }
+SceneId selectedScene()    { return selected_scene; }
+bool showIp()              { return show_ip; }
+bool consumeSceneDirty()   { const bool d = scene_dirty; scene_dirty = false; return d; }
+const String& scrollText() { return scroll_text; }
+const String& wifiError()  { return wifi_err; }
+const char* apSsid()       { return AP_SSID; }
+const char* apPassword()   { return AP_PASSWORD; }
 
 } // namespace WebUi

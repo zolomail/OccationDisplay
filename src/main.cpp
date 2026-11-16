@@ -92,7 +92,6 @@ namespace Colors {
 std::unique_ptr<MatrixPanel_I2S_DMA> dma_display;
 tm current_time{};
 
-std::shared_ptr<ScrollText> scroller;
 std::unique_ptr<FlyingText> ip_overlay;
 IPAddress                   cached_ip;
 
@@ -180,7 +179,7 @@ Scene createScene(SceneId id, MatrixPanel_I2S_DMA& display)
         case SceneId::NormalDays:
             return {
                 std::make_shared<ClearScreen>(display),
-                scroller,
+                std::make_shared<ScrollText>(display, WebUi::scrollText(), -1, 26, Colors::RED, TINY_WIDE_FONT),
                 std::make_shared<ShowTime>(display, current_time, -1, -1, 0, 0, Colors::BLUE, NORMAL_FONT, true),
                 std::make_shared<WeatherOverlay>(display, -1, 5, Colors::CYAN)
             };
@@ -188,7 +187,7 @@ Scene createScene(SceneId id, MatrixPanel_I2S_DMA& display)
         case SceneId::JustSnow:
             return {
                 std::make_shared<ClearScreen>(display),
-                scroller,
+                std::make_shared<ScrollText>(display, WebUi::scrollText(), -1, -10, Colors::RED, TINY_WIDE_FONT),
                 std::make_shared<SnowScape>(display, 50, 10),
                 std::make_shared<WeatherOverlay>(display, -1, 5, Colors::CYAN)
             };
@@ -236,7 +235,7 @@ Scene createScene(SceneId id, MatrixPanel_I2S_DMA& display)
                 std::make_shared<ShootingStar>(display, -1000),
                 std::make_shared<SnowScape>(display, 20, 4),
                 std::make_shared<ShowTime>(display, current_time, -1, -1, 0, 0, Colors::BLUE, NORMAL_FONT, true),
-                scroller,
+                std::make_shared<ScrollText>(display, WebUi::scrollText(), -1, 7, Colors::RED, TINY_WIDE_FONT),
                 std::make_shared<Bitmap>(display, *ufo_bitmap, 16, 10, -1, -1, 8, 0, ufo_mask)
             };
 
@@ -296,7 +295,7 @@ Scene createScene(SceneId id, MatrixPanel_I2S_DMA& display)
 
 void renderScene(SceneId id)
 {
-    if (id != active_scene_id) {
+    if (id != active_scene_id || WebUi::consumeSceneDirty()) {
         active_scene.clear(); // Release existing scene's RAM before allocating the next
         active_scene    = createScene(id, *dma_display);
         active_scene_id = id;
@@ -408,13 +407,6 @@ void setup()
         Serial.println("PSRAM not detected!");
     }
 
-    // Create shared scroller instance; WebUi::begin() will load persisted text into it
-    scroller = std::make_shared<ScrollText>(
-        *dma_display,
-        "",
-        -1, -10, Colors::RED, FontId::TINY_WIDE_FONT
-    );
-
     // Configure native ESP32 SNTP with automatic CET/CEST Daylight Saving Time
     configTzTime(Config::TZ_INFO, Config::NTP_SERVER);
 
@@ -422,7 +414,7 @@ void setup()
     Weather::begin();
 
     // Load NVS settings, connect Wi-Fi, and start the HTTP server
-    WebUi::begin(scroller);
+    WebUi::begin();
 
     Serial.println("Start...");
 }
