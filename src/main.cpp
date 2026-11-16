@@ -179,7 +179,7 @@ Scene createScene(SceneId id, MatrixPanel_I2S_DMA& display)
         case SceneId::NormalDays:
             return {
                 std::make_shared<ClearScreen>(display),
-                std::make_shared<ScrollText>(display, WebUi::scrollText(), -1, 26, Colors::RED, TINY_WIDE_FONT),
+                std::make_shared<ScrollText>(display, WebUi::scrollText(), 26, -10, Colors::RED, TINY_WIDE_FONT),
                 std::make_shared<ShowTime>(display, current_time, -1, -1, 0, 0, Colors::BLUE, NORMAL_FONT, true),
                 std::make_shared<WeatherOverlay>(display, -1, 5, Colors::CYAN)
             };
@@ -235,7 +235,7 @@ Scene createScene(SceneId id, MatrixPanel_I2S_DMA& display)
                 std::make_shared<ShootingStar>(display, -1000),
                 std::make_shared<SnowScape>(display, 20, 4),
                 std::make_shared<ShowTime>(display, current_time, -1, -1, 0, 0, Colors::BLUE, NORMAL_FONT, true),
-                std::make_shared<ScrollText>(display, WebUi::scrollText(), -1, 7, Colors::RED, TINY_WIDE_FONT),
+                std::make_shared<ScrollText>(display, WebUi::scrollText(), 21, -10, Colors::RED, TINY_WIDE_FONT),
                 std::make_shared<Bitmap>(display, *ufo_bitmap, 16, 10, -1, -1, 8, 0, ufo_mask)
             };
 
