@@ -28,6 +28,7 @@
 #include "effects/WeatherOverlay.h"
 #include "effects/WaveSim.h"
 #include "effects/BumpMap.h"
+#include "effects/Hearts.h"
 
 #include "bitmaps/ufo.h"
 #include "bitmaps/pumpkin.h"
@@ -216,6 +217,13 @@ Scene createScene(SceneId id, MatrixPanel_I2S_DMA& display)
                 std::make_shared<BumpMap>(display, Colors::ORANGE, "OCCATION", false)
             };
 
+        case SceneId::HeartsEffect:
+            return {
+                std::make_shared<ClearScreen>(display),
+                std::make_shared<ShowTime>(display, current_time, -1, -1, 0, 0, Colors::PURPLE, TINY_WIDE_FONT, true),
+                std::make_shared<Hearts>(display, 16)
+            };
+
         case SceneId::ChristmasDays:
             return {
                 std::make_shared<ClearScreen>(display),
@@ -231,6 +239,7 @@ Scene createScene(SceneId id, MatrixPanel_I2S_DMA& display)
                 std::make_shared<Present>(display, -15, 7, 5, Colors::WHITE, Colors::YELLOW),
                 std::make_shared<Present>(display, -35, 11, 9, Colors::PURPLE, Colors::GREEN),
                 std::make_shared<SnowScape>(display),
+                std::make_shared<Hearts>(display, 8),
                 std::make_shared<FlyingText>(display, "Merry Christmas", 0, 0, 1, 1, Colors::RED)
             };
 

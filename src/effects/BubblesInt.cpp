@@ -21,7 +21,7 @@ BubbleInt::BubbleInt(const BubbleInt &f) :
 {
 }
 
-BubbleInt::BubbleInt(int16_t x, int16_t y, int16_t r) :
+BubbleInt::BubbleInt(int32_t x, int32_t y, int32_t r) :
 	m_dx(0),
 	m_x(x),
 	m_y(y),
@@ -29,7 +29,7 @@ BubbleInt::BubbleInt(int16_t x, int16_t y, int16_t r) :
 {
 }
 
-void BubbleInt::reset(int16_t max_x, int16_t max_y)
+void BubbleInt::reset(int32_t max_x, int32_t max_y)
 {
 	m_r = random(3<<8, 7<<8);
 	m_dx = random(-64, 64);
@@ -39,7 +39,7 @@ void BubbleInt::reset(int16_t max_x, int16_t max_y)
 
 void BubbleInt::move()
 {
-	m_dx = std::min<int16_t>(std::max<int16_t>(m_dx + (int16_t)random(-4, 5),-64),64);
+	m_dx = std::min<int32_t>(std::max<int32_t>(m_dx + (int32_t)random(-4, 5),-64),64);
 
 	m_x += m_dx;
 	m_y -= 25 + (m_r>>5);
@@ -49,7 +49,7 @@ void BubbleInt::move()
 void BubbleInt::render(Adafruit_GFX &matrix)
 {
 	drawCircleAntialized(matrix);
-	const int16_t offset = (m_r * 2) / 5;
+	const int32_t offset = (m_r * 2) / 5;
 	fillCircleAntialized(matrix, m_x - offset, m_y - offset, m_r / 5);
 }
 
@@ -58,7 +58,7 @@ void BubbleInt::drawCircleAntialized(Adafruit_GFX &matrix)
 //	matrix.drawPixel(m_x>>8, m_y>>8, color565(255, 0, 0));
 	int32_t rr = (m_r+128)*(m_r+128);
 	int32_t re = (m_r-128)*(m_r-128);
-	int16_t pixel_y = std::max<int16_t>((m_y - m_r)>>8, 0)<<8;
+	int32_t pixel_y = std::max<int32_t>((m_y - m_r)>>8, 0)<<8;
 	int32_t yy = pixel_y+128-m_y;
 
 	int32_t	yyy = (yy+0x100)*(yy+0x100);
@@ -66,7 +66,7 @@ void BubbleInt::drawCircleAntialized(Adafruit_GFX &matrix)
 	yyy -= yy;
 	int32_t	yyyy = 2*0x100*0x100;
 
-	for(; pixel_y <= std::min<int16_t>((m_y + m_r)>>8,matrix.height()-1)<<8 ; pixel_y+=0x100)
+	for(; pixel_y <= std::min<int32_t>((m_y + m_r)>>8,matrix.height()-1)<<8 ; pixel_y+=0x100)
 	{
 		int32_t delta_x = fastSqrt(rr - yy);
 		int32_t xe = re - yy;
@@ -112,17 +112,17 @@ void BubbleInt::drawFragment(Adafruit_GFX &matrix, int32_t x1, int32_t x2, int16
 	}
 }
 
-void BubbleInt::fillCircleAntialized(Adafruit_GFX &matrix, int16_t cx, int16_t cy, int16_t cr)
+void BubbleInt::fillCircleAntialized(Adafruit_GFX &matrix, int32_t cx, int32_t cy, int32_t cr)
 {
 	int32_t rr = (cr+128)*(cr+128);
-	int16_t pixel_y = std::max<int16_t>((cy - cr)>>8, 0)<<8;
+	int32_t pixel_y = std::max<int32_t>((cy - cr)>>8, 0)<<8;
 	int32_t yy = pixel_y+128-cy;
 	int32_t yyy = (yy+0x100)*(yy+0x100);
 	yy *= yy;
 	yyy -= yy;
 	int32_t yyyy = 2*0x100*0x100;
 
-	for(; pixel_y <= std::min<int16_t>((cy + cr)>>8,matrix.height()-1)<<8 ; pixel_y+=0x100)
+	for(; pixel_y <= std::min<int32_t>((cy + cr)>>8,matrix.height()-1)<<8 ; pixel_y+=0x100)
 	{
 		int32_t delta_x = fastSqrt(rr - yy);
 
