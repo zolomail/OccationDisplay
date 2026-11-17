@@ -25,10 +25,13 @@ enum class SceneId : uint8_t {
 	FlamingHot,
 	WaterEffect,
 	BumpMapEffect,
-	HeartsEffect,
+	ValentinesDay,
 	CubeEffect,
 	WebUiQr
 };
+
+#define CENTER_X	-1
+#define CENTER_Y	-1
 
 class Scene : public std::vector<std::shared_ptr<Effect>>
 {

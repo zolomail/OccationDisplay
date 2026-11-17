@@ -47,7 +47,7 @@ namespace Config
 
     constexpr uint16_t PANEL_RES_X   = 64;
     constexpr uint16_t PANEL_RES_Y   = 32;
-    constexpr uint16_t PANEL_CHAIN   = 2; // 2 chained panels = 128x32
+    constexpr uint16_t PANEL_CHAIN   = 3; // 2 chained panels = 128x32
 
     constexpr int8_t   PIN_R1        = 44; // Routed to RX (GPIO 44)
     constexpr int8_t   PIN_G1        = 13;
@@ -114,18 +114,12 @@ Scene createScene(SceneId id, MatrixPanel_I2S_DMA& display)
         case SceneId::Connecting:
             return {
                 std::make_shared<ClearScreen>(display),
-                std::make_shared<FlyingText>(display, "Connecting...", -1, -1, 0, 0, Colors::ORANGE, TINY_WIDE_FONT)
-            };
+                std::make_shared<FlyingText>(display, "Connecting...", CENTER_X, CENTER_Y, 0, 0, Colors::ORANGE, TINY_WIDE_FONT)};
 
         case SceneId::Welcome:
             return {
                 std::make_shared<ClearScreen>(display),
-                std::make_shared<FlyingText>(display, "*********************", 2, 0, 0, 0, Colors::WHITE),
-                std::make_shared<FlyingText>(display, "*                   *", 2, 8, 0, 0, Colors::WHITE),
-                std::make_shared<FlyingText>(display, "-OCCATION DISPLAY-", -1, -1, 0, 0, Colors::RED),
-                std::make_shared<FlyingText>(display, "*                   *", 2, 16, 0, 0, Colors::WHITE),
-                std::make_shared<FlyingText>(display, "*********************", 2, 24, 0, 0, Colors::WHITE)
-            };
+                std::make_shared<FlyingText>(display, "-OCCATION DISPLAY-", CENTER_X, CENTER_Y, 0, 0, Colors::RED)};
 
         case SceneId::SetupAp:
         {
@@ -137,21 +131,19 @@ Scene createScene(SceneId id, MatrixPanel_I2S_DMA& display)
             };
             if (WebUi::wifiError().length() > 0)
             {
-                scene.push_back(std::make_shared<FlyingText>(display, WebUi::wifiError(), -1, 0, 0, 0, Colors::RED, TINY_WIDE_FONT));
+                scene.push_back(std::make_shared<FlyingText>(display, WebUi::wifiError(), CENTER_X, 0, 0, 0, Colors::RED, TINY_WIDE_FONT));
             }
             return scene;
         }
         case SceneId::WifiUnknown:
             return {
                 std::make_shared<ClearScreen>(display),
-                std::make_shared<FlyingText>(display, "Unknown SSID", -1, 28, 0, 0, Colors::RED, TINY_WIDE_FONT)
-            };
+                std::make_shared<FlyingText>(display, "Unknown SSID", CENTER_X, 28, 0, 0, Colors::RED, TINY_WIDE_FONT)};
 
         case SceneId::WifiStopped:
             return {
                 std::make_shared<ClearScreen>(display),
-                std::make_shared<FlyingText>(display, "WiFi Stopped", -1, 28, 0, 0, Colors::RED, TINY_WIDE_FONT)
-            };
+                std::make_shared<FlyingText>(display, "WiFi Stopped", CENTER_X, 28, 0, 0, Colors::RED, TINY_WIDE_FONT)};
 
         case SceneId::Test:
             return {
@@ -184,24 +176,21 @@ Scene createScene(SceneId id, MatrixPanel_I2S_DMA& display)
             return {
                 std::make_shared<ClearScreen>(display),
                 std::make_shared<ScrollText>(display, WebUi::scrollText(), 26, -10, Colors::RED, TINY_WIDE_FONT),
-                std::make_shared<ShowTime>(display, current_time, -1, -1, 0, 0, Colors::BLUE, NORMAL_FONT, true),
-                std::make_shared<WeatherOverlay>(display, -1, 5, Colors::CYAN)
-            };
+                std::make_shared<ShowTime>(display, current_time, CENTER_X, CENTER_Y, 0, 0, Colors::BLUE, NORMAL_FONT, true),
+                std::make_shared<WeatherOverlay>(display, CENTER_X, 5, Colors::CYAN)};
 
         case SceneId::JustSnow:
             return {
                 std::make_shared<ClearScreen>(display),
-                std::make_shared<ScrollText>(display, WebUi::scrollText(), -1, -10, Colors::RED, TINY_WIDE_FONT),
+                std::make_shared<ScrollText>(display, WebUi::scrollText(), CENTER_Y, -10, Colors::RED, TINY_WIDE_FONT),
                 std::make_shared<SnowScape>(display, 50, 10),
-                std::make_shared<WeatherOverlay>(display, -1, 5, Colors::CYAN)
-            };
+                std::make_shared<WeatherOverlay>(display, CENTER_X, 5, Colors::CYAN)};
 
         case SceneId::Aquatic:
             return {
                 std::make_shared<ClearScreen>(display),
-                std::make_shared<ShowTime>(display, current_time, -1, -1, 0, 0, Colors::ORANGE, TINY_WIDE_FONT, true),
-                std::make_shared<BubblesInt>(display, 16)
-            };
+                std::make_shared<ShowTime>(display, current_time, CENTER_X, CENTER_Y, 0, 0, Colors::ORANGE, TINY_WIDE_FONT, true),
+                std::make_shared<BubblesInt>(display, 16)};
 
         case SceneId::FlamingHot:
             return {
@@ -219,12 +208,12 @@ Scene createScene(SceneId id, MatrixPanel_I2S_DMA& display)
                 std::make_shared<BumpMap>(display, Colors::ORANGE, "OCCATION", false)
             };
 
-        case SceneId::HeartsEffect:
+        case SceneId::ValentinesDay:
             return {
                 std::make_shared<ClearScreen>(display),
-                std::make_shared<ShowTime>(display, current_time, -1, -1, 0, 0, Colors::PURPLE, TINY_WIDE_FONT, true),
-                std::make_shared<Hearts>(display, 16)
-            };
+                std::make_shared<ShowTime>(display, current_time, CENTER_X, CENTER_Y, 0, 0, Colors::PURPLE, TINY_WIDE_FONT, true),
+                std::make_shared<ScrollText>(display, WebUi::scrollText(), CENTER_Y, -10, Colors::RED, TINY_WIDE_FONT),
+                std::make_shared<Hearts>(display, 16)};
 
         case SceneId::CubeEffect:
             return {
@@ -248,8 +237,7 @@ Scene createScene(SceneId id, MatrixPanel_I2S_DMA& display)
             return {
                 std::make_shared<ClearScreen>(display),
                 std::make_shared<SnowScape>(display),
-                std::make_shared<ShowTime>(display, current_time, -1, -1, 0, 0, Colors::BLUE, NORMAL_FONT, true)
-            };
+                std::make_shared<ShowTime>(display, current_time, CENTER_X, CENTER_Y, 0, 0, Colors::BLUE, NORMAL_FONT, true)};
 
         case SceneId::ChristmasEve:
             return {
@@ -269,21 +257,19 @@ Scene createScene(SceneId id, MatrixPanel_I2S_DMA& display)
                 std::make_shared<Stars>(display, 30),
                 std::make_shared<ShootingStar>(display, -1000),
                 std::make_shared<SnowScape>(display, 20, 4),
-                std::make_shared<ShowTime>(display, current_time, -1, -1, 0, 0, Colors::BLUE, NORMAL_FONT, true),
+                std::make_shared<ShowTime>(display, current_time, CENTER_X, CENTER_Y, 0, 0, Colors::BLUE, NORMAL_FONT, true),
                 std::make_shared<ScrollText>(display, WebUi::scrollText(), 21, -10, Colors::RED, TINY_WIDE_FONT),
-                std::make_shared<Bitmap>(display, *ufo_bitmap, 16, 10, -1, -1, 8, 0, ufo_mask)
-            };
+                std::make_shared<Bitmap>(display, *ufo_bitmap, 16, 10, CENTER_X, CENTER_Y, 8, 0, ufo_mask)};
 
         case SceneId::Halloween:
             return {
                 std::make_shared<ClearScreen>(display),
-                std::make_shared<ShowTime>(display, current_time, -1, 27, 0, 0, Colors::RED, TINY_WIDE_FONT, true),
+                std::make_shared<ShowTime>(display, current_time, CENTER_Y, 27, 0, 0, Colors::RED, TINY_WIDE_FONT, true),
                 std::make_shared<ScrollText>(display, "!!!HAPPY HALLOWEEN!!! --- \x81\x81\x81 --- ", -1, -10, Colors::ORANGE, TINY_WIDE_FONT),
-                std::make_shared<Bitmap>(display, *pumpkin_bitmap, 19, 18, -1, -1, 16, 8, pumpkin_mask),
-                std::make_shared<Bitmap>(display, *pumpkin_bitmap, 19, 18, 100, -1, -15, -7, pumpkin_mask),
-                std::make_shared<Bitmap>(display, *ghost_bitmap, 33, 27, -3, -1, 26, 1, ghost_mask),
-                std::make_shared<Blood>(display)
-            };
+                std::make_shared<Bitmap>(display, *pumpkin_bitmap, 19, 18, CENTER_X, CENTER_Y, 16, 8, pumpkin_mask),
+                std::make_shared<Bitmap>(display, *pumpkin_bitmap, 19, 18, 100, CENTER_Y, -15, -7, pumpkin_mask),
+                std::make_shared<Bitmap>(display, *ghost_bitmap, 33, 27, CENTER_X, CENTER_Y, 26, 1, ghost_mask),
+                std::make_shared<Blood>(display)};
 
         case SceneId::Birthday:
         {
@@ -306,10 +292,9 @@ Scene createScene(SceneId id, MatrixPanel_I2S_DMA& display)
                 std::make_shared<ClearScreen>(display),
                 std::make_shared<Stars>(display),
                 std::make_shared<FireWorks>(display),
-                std::make_shared<FlyingText>(display, "Happy New Year", -1, 5, 0, 0, Colors::BLUE),
-                std::make_shared<FlyingText>(display, String(current_year + 1), -1, 13, 0, 0, Colors::WHITE),
-                std::make_shared<ShowTime>(display, current_time, -1, 21, 0, 0, Colors::CYAN)
-            };
+                std::make_shared<FlyingText>(display, "Happy New Year", CENTER_X, 5, 0, 0, Colors::BLUE),
+                std::make_shared<FlyingText>(display, String(current_year + 1), CENTER_X, 13, 0, 0, Colors::WHITE),
+                std::make_shared<ShowTime>(display, current_time, CENTER_X, 21, 0, 0, Colors::CYAN)};
 
         case SceneId::NewYearsMidnight:
             return {
@@ -319,8 +304,7 @@ Scene createScene(SceneId id, MatrixPanel_I2S_DMA& display)
                 std::make_shared<FireWorks>(display, -200),
                 std::make_shared<FireWorks>(display, -200),
                 std::make_shared<FireWorks>(display, -200),
-                std::make_shared<FlyingText>(display, "Happy New Year", 24, 12, 0, 0, Colors::BLUE)
-            };
+                std::make_shared<FlyingText>(display, "Happy New Year", CENTER_X, 12, 0, 0, Colors::BLUE)};
 
         case SceneId::None:
         default:
@@ -506,8 +490,7 @@ void loop()
             {
                 cached_ip  = ip;
                 ip_overlay = std::unique_ptr<FlyingText>(
-                    new FlyingText(*dma_display, ip.toString(), -1, 0, 0, 0, Colors::GREEN, TINY_WIDE_FONT)
-                );
+                    new FlyingText(*dma_display, ip.toString(), CENTER_X, 0, 0, 0, Colors::GREEN, TINY_WIDE_FONT));
             }
             ip_overlay->render();
         }

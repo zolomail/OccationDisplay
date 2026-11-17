@@ -73,7 +73,7 @@ constexpr SceneOption SCENE_OPTIONS[] = {
     { SceneId::FlamingHot,       "FlamingHot"       },
     { SceneId::WaterEffect,      "WaterEffect"      },
     { SceneId::BumpMapEffect,    "BumpMapEffect"    },
-    { SceneId::HeartsEffect,     "HeartsEffect"     },
+    { SceneId::ValentinesDay,    "ValentinesDay"    },
     { SceneId::CubeEffect,       "CubeEffect"       },
     { SceneId::WebUiQr,          "WebUiQr"          }
 };

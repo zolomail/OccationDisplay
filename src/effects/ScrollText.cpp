@@ -28,17 +28,23 @@ void ScrollText::setText(String text)
 
 void ScrollText::render()
 {
+	if(m_width == 0)
+	{
+		return;
+	}
+
 	setFont(m_font);
 	m_matrix.setTextWrap(false);
 	m_matrix.setTextColor(m_color);
-	m_matrix.setCursor(m_x/SPEED_FACTOR, m_y);
-	m_matrix.print(m_text.c_str());
 
-	if(m_x/SPEED_FACTOR + m_width < m_matrix.width())
+	int16_t draw_x = m_x / SPEED_FACTOR;
+	while(draw_x < m_matrix.width())
 	{
-		m_matrix.setCursor(m_x/SPEED_FACTOR + m_width, m_y);
+		m_matrix.setCursor(draw_x, m_y);
 		m_matrix.print(m_text.c_str());
+		draw_x += m_width;
 	}
+
 	m_x += m_dx;
 	if(m_x/SPEED_FACTOR + m_width <= 0){
 		m_x += m_width*SPEED_FACTOR;

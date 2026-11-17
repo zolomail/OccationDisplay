@@ -18,6 +18,7 @@ Scroller and occation animation display on multiple 64x32 led segment displays u
                 Colors / fonts
 
     3: More effects:
+        Full border
         Animated sprites (fish, birds)
         Christmas tree
 
@@ -29,6 +30,9 @@ Scroller and occation animation display on multiple 64x32 led segment displays u
         Sankt Hans
         Mortens Aften
         Wedding days
+        Is it friday?
+        Daily/Weekly Reminder (weekend/bedtime)?
 
     5: Custom scenes
     6: Show events from calendar (eg google calendar)
+    7: Add moon cycly to weather icon (at night)
