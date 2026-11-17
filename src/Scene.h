@@ -27,7 +27,12 @@ enum class SceneId : uint8_t {
 	BumpMapEffect,
 	ValentinesDay,
 	CubeEffect,
-	WebUiQr
+	WebUiQr,
+	Test1,
+	Test2,
+	Test3,
+	Test4,
+	Test5
 };
 
 #define CENTER_X	-1

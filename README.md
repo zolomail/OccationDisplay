@@ -18,7 +18,6 @@ Scroller and occation animation display on multiple 64x32 led segment displays u
                 Colors / fonts
 
     3: More effects:
-        Full border
         Animated sprites (fish, birds)
         Christmas tree
 
@@ -36,3 +35,6 @@ Scroller and occation animation display on multiple 64x32 led segment displays u
     5: Custom scenes
     6: Show events from calendar (eg google calendar)
     7: Add moon cycly to weather icon (at night)
+
+    8: When not being able to connect to WIfi show QR code for the WIFi API ESP32 provides..and the IP to connect to
+    9: Move x,y alignment into Effect.h and make enum to define magic numbers eg 0x7FF0 .. 0x7FFF for XPOS_CENTER, XPOS_1_QUART XPOS_3_QUART XPOS_RIGHT (width of display -1)

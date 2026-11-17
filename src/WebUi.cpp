@@ -75,7 +75,12 @@ constexpr SceneOption SCENE_OPTIONS[] = {
     { SceneId::BumpMapEffect,    "BumpMapEffect"    },
     { SceneId::ValentinesDay,    "ValentinesDay"    },
     { SceneId::CubeEffect,       "CubeEffect"       },
-    { SceneId::WebUiQr,          "WebUiQr"          }
+    { SceneId::WebUiQr,          "WebUiQr"          },
+    { SceneId::Test1,            "Test 1"           },
+    { SceneId::Test2,            "Test 2"           },
+    { SceneId::Test3,            "Test 3"           },
+    { SceneId::Test4,            "Test 4"           },
+    { SceneId::Test5,            "Test 5"           }
 };
 
 void connectStation()
@@ -254,7 +259,7 @@ esp_err_t handleOptionsHttp(httpd_req_t* req)
     String val;
     if (getFormArg(body, "scene_id", val)) {
         const int id = val.toInt();
-        if (id >= static_cast<int>(SceneId::None) && id <= static_cast<int>(SceneId::WebUiQr)) {
+        if (id >= static_cast<int>(SceneId::None) && id <= static_cast<int>(SceneId::Test5)) {
             selected_scene = static_cast<SceneId>(id);
         }
     }

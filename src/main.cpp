@@ -31,6 +31,7 @@
 #include "effects/Hearts.h"
 #include "effects/Cube3D.h"
 #include "effects/QrCode.h"
+#include "effects/Border.h"
 
 #include "bitmaps/ufo.h"
 #include "bitmaps/pumpkin.h"
@@ -119,6 +120,7 @@ Scene createScene(SceneId id, MatrixPanel_I2S_DMA& display)
         case SceneId::Welcome:
             return {
                 std::make_shared<ClearScreen>(display),
+                std::make_shared<Border>(display, 2, Colors::WHITE, Colors::BLUE, BorderPattern::Dashed, 4, 1),
                 std::make_shared<FlyingText>(display, "-OCCATION DISPLAY-", CENTER_X, CENTER_Y, 0, 0, Colors::RED)};
 
         case SceneId::SetupAp:
@@ -305,6 +307,36 @@ Scene createScene(SceneId id, MatrixPanel_I2S_DMA& display)
                 std::make_shared<FireWorks>(display, -200),
                 std::make_shared<FireWorks>(display, -200),
                 std::make_shared<FlyingText>(display, "Happy New Year", CENTER_X, 12, 0, 0, Colors::BLUE)};
+
+        case SceneId::Test1:
+            return {
+                std::make_shared<ClearScreen>(display),
+                std::make_shared<Border>(display, 2, Colors::RED, Colors::YELLOW, BorderPattern::Solid),
+                std::make_shared<FlyingText>(display, "Test 1: Solid", CENTER_X, CENTER_Y, 0, 0, Colors::WHITE, TINY_WIDE_FONT)};
+
+        case SceneId::Test2:
+            return {
+                std::make_shared<ClearScreen>(display),
+                std::make_shared<Border>(display, 2, Colors::RED, Colors::WHITE, BorderPattern::Dashed, 4, 2),
+                std::make_shared<FlyingText>(display, "Test 2: Dashed", CENTER_X, CENTER_Y, 0, 0, Colors::WHITE, TINY_WIDE_FONT)};
+
+        case SceneId::Test3:
+            return {
+                std::make_shared<ClearScreen>(display),
+                std::make_shared<Border>(display, 2, Colors::CYAN, Colors::BLUE, BorderPattern::Chase, 8, 3),
+                std::make_shared<FlyingText>(display, "Test 3: Chase", CENTER_X, CENTER_Y, 0, 0, Colors::WHITE, TINY_WIDE_FONT)};
+
+        case SceneId::Test4:
+            return {
+                std::make_shared<ClearScreen>(display),
+                std::make_shared<Border>(display, 2, Colors::YELLOW, Colors::PURPLE, BorderPattern::Twinkle, 3, 2),
+                std::make_shared<FlyingText>(display, "Test 4: Twinkle", CENTER_X, CENTER_Y, 0, 0, Colors::WHITE, TINY_WIDE_FONT)};
+
+        case SceneId::Test5:
+            return {
+                std::make_shared<ClearScreen>(display),
+                std::make_shared<Border>(display, 2, Colors::WHITE, Colors::BLACK, BorderPattern::Rainbow, 4, 3),
+                std::make_shared<FlyingText>(display, "Test 5: Rainbow", CENTER_X, CENTER_Y, 0, 0, Colors::WHITE, TINY_WIDE_FONT)};
 
         case SceneId::None:
         default:
