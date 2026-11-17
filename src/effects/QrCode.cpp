@@ -29,8 +29,8 @@ void QrCode::setText(const String &text)
 void QrCode::render()
 {
 	const int16_t box_size = m_qr.size + 2 * m_quiet_zone;
-	const int16_t start_x  = (m_x < 0) ? ((m_matrix.width()  - box_size) / 2) : m_x;
-	const int16_t start_y  = (m_y < 0) ? ((m_matrix.height() - box_size) / 2) : m_y;
+	const int16_t start_x  = resolveX(m_x, box_size);
+	const int16_t start_y  = resolveY(m_y, box_size);
 
 	// Draw background + quiet zone
 	m_matrix.fillRect(start_x, start_y, box_size, box_size, m_bg_color);

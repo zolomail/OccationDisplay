@@ -11,14 +11,8 @@ Bitmap::Bitmap(Adafruit_GFX &matrix, const uint16_t &bitmap, int16_t width, int1
 	m_dy(dy),
 	m_mask(mask)
 {
-	if(m_x < 0){
-		m_x = (m_matrix.width() - m_width) / 2;
-	}
-	if(m_y < 0){
-		m_y = (m_matrix.height() - m_height) / 2;
-	}
-	m_x <<= 4;
-	m_y <<= 4;
+	m_x = resolveX(m_x, m_width) << 4;
+	m_y = resolveY(m_y, m_height) << 4;
 }
 
 void Bitmap::render()

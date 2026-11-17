@@ -6,7 +6,7 @@ class Bitmap : public Effect
 {
 
 public:
-	Bitmap(Adafruit_GFX &matrix, const uint16_t &bitmap, int16_t width, int16_t height, int16_t x=-1, int16_t y=-1, int16_t dx=0, int16_t dy=0, const unsigned char *mask = NULL);
+	Bitmap(Adafruit_GFX &matrix, const uint16_t &bitmap, int16_t width, int16_t height, int16_t x=XPOS_CENTER, int16_t y=YPOS_CENTER, int16_t dx=0, int16_t dy=0, const unsigned char *mask = NULL);
 	void render();
 
 protected:

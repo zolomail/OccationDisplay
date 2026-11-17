@@ -37,4 +37,5 @@ Scroller and occation animation display on multiple 64x32 led segment displays u
     7: Add moon cycly to weather icon (at night)
 
     8: When not being able to connect to WIfi show QR code for the WIFi API ESP32 provides..and the IP to connect to
-    9: Move x,y alignment into Effect.h and make enum to define magic numbers eg 0x7FF0 .. 0x7FFF for XPOS_CENTER, XPOS_1_QUART XPOS_3_QUART XPOS_RIGHT (width of display -1)
+    9: Allow setting outline color for for Hearts and Bubbles 
+    10: Golf player on grass standing on right side and flag and hole on the right side (tracman logo scrolling in background and countdown to beta)

@@ -13,16 +13,9 @@ FlyingText::FlyingText(Adafruit_GFX &matrix, String text, int16_t x, int16_t y, 
 	int16_t x1 = 0, y1 = 0;
 	setFont(m_font);
 	m_matrix.getTextBounds(m_text, 0, 0, &x1, &y1, &m_width, &m_height);
-//		width-=2;
 	m_height -= 2;
-	if(m_x < 0){
-		m_x = (m_matrix.width() - m_width) / 2;
-	}
-	if(m_y < 0){
-		m_y = (m_matrix.height() - m_height) / 2;
-	}
-	m_x -= x1;
-	m_y -= y1;
+	m_x = resolveX(m_x, m_width) - x1;
+	m_y = resolveY(m_y, m_height) - y1;
 }
 
 void FlyingText::render()

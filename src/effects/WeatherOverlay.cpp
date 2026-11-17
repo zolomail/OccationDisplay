@@ -140,8 +140,8 @@ void WeatherOverlay::render()
 
 	// Total width = 16px icon + 2px gap + temp digits + 4px degree symbol + "C"
 	const int16_t total_w = ICON_WIDTH + 2 + tw + 4 + cw;
-	const int16_t draw_x  = (m_x < 0) ? ((m_matrix.width() - total_w) / 2) : m_x;
-	const int16_t draw_y  = (m_y < 0) ? ((m_matrix.height() - ICON_HEIGHT) / 2) : m_y;
+	const int16_t draw_x  = resolveX(m_x, total_w);
+	const int16_t draw_y  = resolveY(m_y, ICON_HEIGHT);
 
 	// 1. Draw 16x8 weather icon
 	drawIcon(draw_x, draw_y, Weather::condition());

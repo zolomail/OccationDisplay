@@ -14,8 +14,8 @@ public:
 	QrCode(
 		Adafruit_GFX &matrix,
 		const String &text,
-		int16_t x = -1,
-		int16_t y = -1,
+		int16_t x = XPOS_CENTER,
+		int16_t y = YPOS_CENTER,
 		uint16_t fg_color = 0x0000,
 		uint16_t bg_color = color565(200, 200, 200),
 		uint8_t quiet_zone = 2

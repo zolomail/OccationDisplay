@@ -22,8 +22,7 @@ void ScrollText::setText(String text)
 	m_matrix.setTextWrap(false);
 	int16_t x1 = 0, y1 = 0;
 	m_matrix.getTextBounds(m_text, 0, 0, &x1, &y1, &m_width, &m_height);
-	m_y = (m_initial_y < 0) ? (m_matrix.height() - m_height) / 2 : m_initial_y;
-	m_y -= y1;
+	m_y = resolveY(m_initial_y, m_height) - y1;
 }
 
 void ScrollText::render()

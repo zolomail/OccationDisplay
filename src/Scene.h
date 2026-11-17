@@ -35,9 +35,6 @@ enum class SceneId : uint8_t {
 	Test5
 };
 
-#define CENTER_X	-1
-#define CENTER_Y	-1
-
 class Scene : public std::vector<std::shared_ptr<Effect>>
 {
 public:
