@@ -173,7 +173,9 @@ esp_err_t handleRootHttp(httpd_req_t* req)
     }
     if (Weather::isValid()) {
         html += "<p><b>Current Weather (" + Weather::city() + "):</b> " +
-                String(Weather::conditionName()) + " (" + String(Weather::temperature(), 1) + " &deg;C)</p>";
+                String(Weather::conditionName()) + " (" + String(Weather::temperature(), 1) + " &deg;C, " +
+                String(Weather::isDay() ? "Day" : "Night") + " &mdash; Moon: " +
+                String(Weather::moonPhaseName()) + ")</p>";
     } else {
         html += "<p><b>Current Weather:</b> Fetching...</p>";
     }

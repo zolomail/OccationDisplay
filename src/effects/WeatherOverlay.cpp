@@ -1,80 +1,6 @@
 #include "WeatherOverlay.h"
 #include <cmath>
 
-namespace {
-
-constexpr uint16_t _  = 0x0000;                      // Transparent
-constexpr uint16_t SY = color565(255, 220,   0);     // Sun bright yellow
-constexpr uint16_t SO = color565(255, 140,   0);     // Sun warm orange ray
-constexpr uint16_t CW = color565(245, 245, 255);     // Cloud white highlight
-constexpr uint16_t CL = color565(170, 180, 200);     // Cloud light grey body
-constexpr uint16_t CD = color565(100, 110, 130);     // Storm cloud dark grey
-constexpr uint16_t RB = color565( 40, 140, 255);     // Raindrop blue
-constexpr uint16_t SW = color565(255, 255, 255);     // Snowflake white
-constexpr uint16_t SC = color565(140, 230, 255);     // Hail / ice cyan
-
-// 16x8 Sunny icon (Sun with rays)
-constexpr uint16_t ICON_SUNNY[16 * 8] = {
-	_,  _,  _,  _, SO,  _,  _, SY, SY,  _,  _, SO,  _,  _,  _,  _,
-	_,  _,  _,  _,  _, SY, SY, SY, SY, SY, SY,  _,  _,  _,  _,  _,
-	_,  _, SO,  _, SY, SY, SY, SY, SY, SY, SY, SY,  _, SO,  _,  _,
-	_,  _,  _, SY, SY, SY, SY, SY, SY, SY, SY, SY, SY,  _,  _,  _,
-	_,  _,  _, SY, SY, SY, SY, SY, SY, SY, SY, SY, SY,  _,  _,  _,
-	_,  _, SO,  _, SY, SY, SY, SY, SY, SY, SY, SY,  _, SO,  _,  _,
-	_,  _,  _,  _,  _, SY, SY, SY, SY, SY, SY,  _,  _,  _,  _,  _,
-	_,  _,  _,  _, SO,  _,  _, SY, SY,  _,  _, SO,  _,  _,  _,  _
-};
-
-// 16x8 Cloudy icon (Fluffy two-tone cloud)
-constexpr uint16_t ICON_CLOUDY[16 * 8] = {
-	_,  _,  _,  _,  _, CW, CW, CW, CW,  _,  _,  _,  _,  _,  _,  _,
-	_,  _,  _,  _, CW, CW, CW, CW, CW, CW, CW, CW,  _,  _,  _,  _,
-	_,  _, CW, CW, CW, CW, CW, CW, CW, CW, CW, CW, CW,  _,  _,  _,
-	_, CW, CW, CW, CW, CW, CW, CW, CW, CW, CW, CW, CW, CW,  _,  _,
-	_, CW, CW, CL, CL, CL, CL, CL, CL, CL, CL, CL, CW, CW, CW,  _,
-	_, CL, CL, CL, CL, CL, CL, CL, CL, CL, CL, CL, CL, CL, CL,  _,
-	_,  _, CL, CL, CL, CL, CL, CL, CL, CL, CL, CL, CL, CL,  _,  _,
-	_,  _,  _,  _,  _,  _,  _,  _,  _,  _,  _,  _,  _,  _,  _,  _
-};
-
-// 16x8 Rainy icon (Cloud + diagonal rain streaks)
-constexpr uint16_t ICON_RAINY[16 * 8] = {
-	_,  _,  _,  _,  _, CW, CW, CW, CW,  _,  _,  _,  _,  _,  _,  _,
-	_,  _,  _, CW, CW, CW, CW, CW, CW, CW, CW, CW,  _,  _,  _,  _,
-	_,  _, CW, CW, CW, CW, CW, CW, CW, CW, CW, CW, CW,  _,  _,  _,
-	_, CW, CL, CL, CL, CL, CL, CL, CL, CL, CL, CL, CL, CW,  _,  _,
-	_,  _, CL, CL, CL, CL, CL, CL, CL, CL, CL, CL, CL,  _,  _,  _,
-	_,  _,  _, RB,  _,  _, RB,  _,  _, RB,  _,  _, RB,  _,  _,  _,
-	_,  _, RB,  _,  _, RB,  _,  _, RB,  _,  _, RB,  _,  _,  _,  _,
-	_,  _,  _,  _,  _,  _,  _,  _,  _,  _,  _,  _,  _,  _,  _,  _
-};
-
-// 16x8 Snow icon (Cloud + falling snowflakes)
-constexpr uint16_t ICON_SNOW[16 * 8] = {
-	_,  _,  _,  _,  _, CW, CW, CW, CW,  _,  _,  _,  _,  _,  _,  _,
-	_,  _,  _, CW, CW, CW, CW, CW, CW, CW, CW, CW,  _,  _,  _,  _,
-	_,  _, CW, CW, CW, CW, CW, CW, CW, CW, CW, CW, CW,  _,  _,  _,
-	_, CW, CL, CL, CL, CL, CL, CL, CL, CL, CL, CL, CL, CW,  _,  _,
-	_,  _, CL, CL, CL, CL, CL, CL, CL, CL, CL, CL, CL,  _,  _,  _,
-	_,  _,  _, SW,  _,  _,  _, SC,  _,  _,  _, SW,  _,  _,  _,  _,
-	_,  _,  _,  _,  _, SW,  _,  _,  _, SW,  _,  _,  _, SC,  _,  _,
-	_,  _,  _, SC,  _,  _,  _, SW,  _,  _,  _, SC,  _,  _,  _,  _
-};
-
-// 16x8 Hail / Storm icon (Dark cloud + lightning bolt + hail pellets)
-constexpr uint16_t ICON_HAIL[16 * 8] = {
-	_,  _,  _,  _,  _, CL, CL, CL, CL,  _,  _,  _,  _,  _,  _,  _,
-	_,  _,  _, CL, CL, CL, CL, CL, CL, CL, CL, CL,  _,  _,  _,  _,
-	_,  _, CL, CD, CD, CD, CD, CD, CD, CD, CD, CD, CL,  _,  _,  _,
-	_, CL, CD, CD, CD, CD, CD, CD, CD, CD, CD, CD, CD, CL,  _,  _,
-	_,  _, CD, CD, CD, CD, CD, SY, SY, CD, CD, CD, CD,  _,  _,  _,
-	_,  _,  _, SC,  _,  _, SY, SY,  _,  _, SC,  _,  _,  _,  _,  _,
-	_,  _,  _,  _,  _,  _,  _, SY, SY,  _,  _,  _, SW,  _,  _,  _,
-	_,  _,  _,  _, SW,  _, SY,  _,  _,  _, SC,  _,  _,  _,  _,  _
-};
-
-} // namespace
-
 WeatherOverlay::WeatherOverlay(
 	Adafruit_GFX &matrix,
 	int16_t x,
@@ -92,31 +18,57 @@ WeatherOverlay::WeatherOverlay(
 
 void WeatherOverlay::drawIcon(int16_t x, int16_t y, WeatherCondition cond)
 {
-	const uint16_t* bmp = ICON_CLOUDY;
-	switch (cond) {
-		case WeatherCondition::Sunny:  bmp = ICON_SUNNY;  break;
-		case WeatherCondition::Cloudy: bmp = ICON_CLOUDY; break;
-		case WeatherCondition::Rainy:  bmp = ICON_RAINY;  break;
-		case WeatherCondition::Snow:   bmp = ICON_SNOW;   break;
-		case WeatherCondition::Hail:   bmp = ICON_HAIL;   break;
-		case WeatherCondition::Unknown:
-		default:                       bmp = ICON_CLOUDY; break;
+	const bool is_day = Weather::isDay();
+	const char* png_path = nullptr;
+
+	if (cond == WeatherCondition::Sunny) {
+		if (is_day) {
+			png_path = "/weather/sunny_day.png";
+		} else {
+			static const char* const MOON_FILES[8] = {
+				"/weather/moon_new.png",
+				"/weather/moon_waxing_crescent.png",
+				"/weather/moon_first_quarter.png",
+				"/weather/moon_waxing_gibbous.png",
+				"/weather/moon_full.png",
+				"/weather/moon_waning_gibbous.png",
+				"/weather/moon_last_quarter.png",
+				"/weather/moon_waning_crescent.png"
+			};
+			png_path = MOON_FILES[Weather::moonPhase() & 7];
+		}
+	} else {
+		switch (cond) {
+			case WeatherCondition::Cloudy:
+				png_path = is_day ? "/weather/cloudy_day.png" : "/weather/cloudy_night.png";
+				break;
+			case WeatherCondition::Rainy:
+				png_path = is_day ? "/weather/rainy_day.png" : "/weather/rainy_night.png";
+				break;
+			case WeatherCondition::Snow:
+				png_path = is_day ? "/weather/snow_day.png" : "/weather/snow_night.png";
+				break;
+			case WeatherCondition::Hail:
+				png_path = is_day ? "/weather/hail_day.png" : "/weather/hail_night.png";
+				break;
+			default:
+				png_path = is_day ? "/weather/cloudy_day.png" : "/weather/cloudy_night.png";
+				break;
+		}
 	}
 
-	for (int16_t row = 0; row < ICON_HEIGHT; ++row) {
-		const int16_t py = y + row;
-		if (py < 0 || py >= m_matrix.height()) continue;
+	if (!png_path) return;
 
-		const uint16_t* row_ptr = bmp + (row * ICON_WIDTH);
-		for (int16_t col = 0; col < ICON_WIDTH; ++col) {
-			const uint16_t c = row_ptr[col];
-			if (c != 0x0000) {
-				const int16_t px = x + col;
-				if (px >= 0 && px < m_matrix.width()) {
-					m_matrix.drawPixel(px, py, c);
-				}
-			}
-		}
+	// Load and cache PNG icon; reload only if icon path or position changes
+	if (!m_cached_png || m_cached_png_path != png_path || m_cached_x != x || m_cached_y != y) {
+		m_cached_png = std::make_unique<PngEffect>(m_matrix, png_path, x, y);
+		m_cached_png_path = png_path;
+		m_cached_x = x;
+		m_cached_y = y;
+	}
+
+	if (m_cached_png && m_cached_png->isValid()) {
+		m_cached_png->render();
 	}
 }
 
@@ -143,10 +95,10 @@ void WeatherOverlay::render()
 	const int16_t draw_x  = resolveX(m_x, total_w);
 	const int16_t draw_y  = resolveY(m_y, ICON_HEIGHT);
 
-	// 1. Draw 16x8 weather icon
+	// 1. Draw 16x16 weather icon from LittleFS (/weather/*.png)
 	drawIcon(draw_x, draw_y, Weather::condition());
 
-	// Vertically center text relative to the 8px icon height
+	// Vertically center temperature text relative to the 16px icon height
 	const int16_t text_x = draw_x + ICON_WIDTH + 2;
 	const int16_t text_y = draw_y + ((ICON_HEIGHT - static_cast<int16_t>(th)) / 2) - y1;
 
@@ -156,7 +108,7 @@ void WeatherOverlay::render()
 
 	// 3. Draw 2x2 pixel degree symbol (°) + "C"
 	const int16_t deg_x = text_x + tw + 1;
-	const int16_t deg_y = draw_y + 1;
+	const int16_t deg_y = draw_y + ((ICON_HEIGHT - static_cast<int16_t>(th)) / 2) - 1;
 	m_matrix.drawRect(deg_x, deg_y, 2, 2, m_color);
 
 	m_matrix.setCursor(deg_x + 3 - cx1, text_y);

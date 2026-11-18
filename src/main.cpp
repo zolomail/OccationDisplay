@@ -4,6 +4,7 @@
 #include <memory>
 
 #include <WiFi.h>
+#include <LittleFS.h>
 #include <ESP32-HUB75-MatrixPanel-I2S-DMA.h>
 
 // Custom Scene, Service & Effect Headers
@@ -32,6 +33,7 @@
 #include "effects/Cube3D.h"
 #include "effects/QrCode.h"
 #include "effects/Border.h"
+#include "effects/PngEffect.h"
 
 #include "bitmaps/ufo.h"
 #include "bitmaps/pumpkin.h"
@@ -179,14 +181,14 @@ Scene createScene(SceneId id, MatrixPanel_I2S_DMA& display)
                 std::make_shared<ClearScreen>(display),
                 std::make_shared<ScrollText>(display, WebUi::scrollText(), 26, -10, Colors::RED, TINY_WIDE_FONT),
                 std::make_shared<ShowTime>(display, current_time, XPOS_CENTER, YPOS_CENTER, 0, 0, Colors::BLUE, NORMAL_FONT, true),
-                std::make_shared<WeatherOverlay>(display, XPOS_CENTER, 5, Colors::CYAN)};
+                std::make_shared<WeatherOverlay>(display, 0, 0, Colors::CYAN)};
 
         case SceneId::JustSnow:
             return {
                 std::make_shared<ClearScreen>(display),
                 std::make_shared<ScrollText>(display, WebUi::scrollText(), YPOS_CENTER, -10, Colors::RED, TINY_WIDE_FONT),
                 std::make_shared<SnowScape>(display, 50, 10),
-                std::make_shared<WeatherOverlay>(display, XPOS_CENTER, 5, Colors::CYAN)};
+                std::make_shared<WeatherOverlay>(display, 0, 0, Colors::CYAN)};
 
         case SceneId::Aquatic:
             return {
@@ -458,6 +460,13 @@ void setup()
         Serial.println("PSRAM not detected!");
     }
 
+    // Initialize LittleFS filesystem
+    if (!LittleFS.begin(true)) {
+        Serial.println("LittleFS mount failed!");
+    } else {
+        Serial.println("LittleFS mounted successfully.");
+    }
+
     // Configure native ESP32 SNTP with automatic CET/CEST Daylight Saving Time
     configTzTime(Config::TZ_INFO, Config::NTP_SERVER);
 
@@ -536,7 +545,7 @@ void loop()
         BlinkLed(frame_start, false);
         delay(Config::FRAME_TIME_MS - elapsed);
     } else {
-        Serial.println("Rendering took too long");
+        //Serial.println("Rendering took too long");
         BlinkLed(frame_start, true);
     }
 }

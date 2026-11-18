@@ -34,8 +34,8 @@ Scroller and occation animation display on multiple 64x32 led segment displays u
 
     5: Custom scenes
     6: Show events from calendar (eg google calendar)
-    7: Add moon cycly to weather icon (at night)
-
     8: When not being able to connect to WIfi show QR code for the WIFi API ESP32 provides..and the IP to connect to
     9: Allow setting outline color for for Hearts and Bubbles 
     10: Golf player on grass standing on right side and flag and hole on the right side (tracman logo scrolling in background and countdown to beta)
+    11: Add CPU load debug info bar on right side of display (from bottom to top indicating how loaded the cpu is)
+    12: Fix snow piling up on the left side of the display

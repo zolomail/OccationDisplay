@@ -5,6 +5,7 @@
 #include <atomic>
 #include <cstdlib>
 #include <cstring>
+#include <ctime>
 
 enum class WeatherCondition : uint8_t {
     Unknown = 0,
@@ -21,6 +22,7 @@ namespace Detail {
     inline std::atomic<WeatherCondition> s_condition{WeatherCondition::Unknown};
     inline std::atomic<int>              s_wmo_code{-1};
     inline std::atomic<float>            s_temperature{0.0f};
+    inline std::atomic<bool>             s_is_day{true};
     inline std::atomic<bool>             s_valid{false};
     inline bool                          s_geo_resolved = false;
     inline float                         s_lat          = 56.15f; // Default fallback (Denmark)
@@ -129,7 +131,7 @@ namespace Detail {
     {
         String path = "/v1/forecast?latitude=" + String(s_lat, 4) +
                       "&longitude=" + String(s_lon, 4) +
-                      "&current=weather_code,temperature_2m";
+                      "&current=weather_code,temperature_2m,is_day";
 
         char body[512];
         if (!httpGetBody("api.open-meteo.com", path, body, sizeof(body))) {
@@ -144,19 +146,22 @@ namespace Detail {
 
         const char* codePtr = strstr(curObj, "\"weather_code\":");
         const char* tempPtr = strstr(curObj, "\"temperature_2m\":");
+        const char* dayPtr  = strstr(curObj, "\"is_day\":");
         if (!codePtr || !tempPtr) {
             return false;
         }
 
-        const int   code = static_cast<int>(strtol(codePtr + 15, nullptr, 10));
-        const float temp = strtof(tempPtr + 17, nullptr);
+        const int   code   = static_cast<int>(strtol(codePtr + 15, nullptr, 10));
+        const float temp   = strtof(tempPtr + 17, nullptr);
+        const bool  is_day = dayPtr ? (strtol(dayPtr + 9, nullptr, 10) != 0) : true;
 
         s_wmo_code.store(code, std::memory_order_relaxed);
         s_temperature.store(temp, std::memory_order_relaxed);
+        s_is_day.store(is_day, std::memory_order_relaxed);
         s_condition.store(mapWmoCode(code), std::memory_order_relaxed);
         s_valid.store(true, std::memory_order_release);
 
-        Serial.printf("Weather updated: WMO=%d, %.1f C\n", code, temp);
+        Serial.printf("Weather updated: WMO=%d, %.1f C, is_day=%d\n", code, temp, is_day ? 1 : 0);
         return true;
     }
 
@@ -213,6 +218,48 @@ inline int wmoCode()
 inline bool isValid()
 {
     return Detail::s_valid.load(std::memory_order_acquire);
+}
+
+inline bool isDay()
+{
+    if (isValid()) {
+        return Detail::s_is_day.load(std::memory_order_relaxed);
+    }
+    const time_t now = time(nullptr);
+    tm t{};
+    localtime_r(&now, &t);
+    return (t.tm_hour >= 7 && t.tm_hour < 20);
+}
+
+// Returns current lunar phase (0..7):
+//   0 = New Moon, 1 = Waxing Crescent, 2 = First Quarter, 3 = Waxing Gibbous,
+//   4 = Full Moon, 5 = Waning Gibbous, 6 = Last Quarter, 7 = Waning Crescent
+inline uint8_t moonPhase()
+{
+    constexpr int64_t REF_NEW_MOON_UTC = 947182440LL; // 2000-01-06 18:14:00 UTC
+    constexpr int64_t SYNODIC_MONTH_S  = 2551443LL;   // 29.530588853 days in seconds
+
+    const int64_t now = static_cast<int64_t>(time(nullptr));
+    if (now < REF_NEW_MOON_UTC) {
+        return 4; // Default to Full Moon before NTP sync
+    }
+    const int64_t elapsed   = now - REF_NEW_MOON_UTC;
+    const int64_t cycle_sec = ((elapsed % SYNODIC_MONTH_S) + SYNODIC_MONTH_S) % SYNODIC_MONTH_S;
+    return static_cast<uint8_t>(((cycle_sec + (SYNODIC_MONTH_S / 16)) * 8LL / SYNODIC_MONTH_S) & 7);
+}
+
+inline const char* moonPhaseName(uint8_t phase = moonPhase())
+{
+    switch (phase & 7) {
+        case 0:  return "New Moon";
+        case 1:  return "Waxing Crescent";
+        case 2:  return "First Quarter";
+        case 3:  return "Waxing Gibbous";
+        case 4:  return "Full Moon";
+        case 5:  return "Waning Gibbous";
+        case 6:  return "Last Quarter";
+        default: return "Waning Crescent";
+    }
 }
 
 inline const String& city()
