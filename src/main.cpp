@@ -19,7 +19,7 @@
 #include "effects/FlyingText.h"
 #include "effects/FireWorks.h"
 #include "effects/ShowTime.h"
-#include "effects/Bitmap.h"
+#include "effects/FlyingPng.h"
 #include "effects/ShootingStar.h"
 #include "effects/Circle.h"
 #include "effects/ScrollText.h"
@@ -33,12 +33,6 @@
 #include "effects/Cube3D.h"
 #include "effects/QrCode.h"
 #include "effects/Border.h"
-#include "effects/PngEffect.h"
-
-#include "bitmaps/ufo.h"
-#include "bitmaps/pumpkin.h"
-#include "bitmaps/ghost.h"
-#include "bitmaps/champagne.h"
 
 namespace {
 // =========================================================================
@@ -263,16 +257,16 @@ Scene createScene(SceneId id, MatrixPanel_I2S_DMA& display)
                 std::make_shared<SnowScape>(display, 20, 4),
                 std::make_shared<ShowTime>(display, current_time, XPOS_CENTER, YPOS_CENTER, 0, 0, Colors::BLUE, NORMAL_FONT, true),
                 std::make_shared<ScrollText>(display, WebUi::scrollText(), 21, -10, Colors::RED, TINY_WIDE_FONT),
-                std::make_shared<Bitmap>(display, *ufo_bitmap, 16, 10, XPOS_CENTER, YPOS_CENTER, 8, 0, ufo_mask)};
+                std::make_shared<FlyingPng>(display, "/bitmaps/ufo.png", XPOS_CENTER, YPOS_CENTER, 8, 0)};
 
         case SceneId::Halloween:
             return {
                 std::make_shared<ClearScreen>(display),
                 std::make_shared<ShowTime>(display, current_time, XPOS_CENTER, 27, 0, 0, Colors::RED, TINY_WIDE_FONT, true),
                 std::make_shared<ScrollText>(display, "!!!HAPPY HALLOWEEN!!! --- \x81\x81\x81 --- ", YPOS_CENTER, -10, Colors::ORANGE, TINY_WIDE_FONT),
-                std::make_shared<Bitmap>(display, *pumpkin_bitmap, 19, 18, XPOS_CENTER, YPOS_CENTER, 16, 8, pumpkin_mask),
-                std::make_shared<Bitmap>(display, *pumpkin_bitmap, 19, 18, 100, YPOS_CENTER, -15, -7, pumpkin_mask),
-                std::make_shared<Bitmap>(display, *ghost_bitmap, 33, 27, XPOS_CENTER, YPOS_CENTER, 26, 1, ghost_mask),
+                std::make_shared<FlyingPng>(display, "/bitmaps/pumpkin.png", XPOS_CENTER, YPOS_CENTER, 16, 8),
+                std::make_shared<FlyingPng>(display, "/bitmaps/pumpkin.png", 100, YPOS_CENTER, -15, -7),
+                std::make_shared<FlyingPng>(display, "/bitmaps/ghost.png", XPOS_CENTER, YPOS_CENTER, 26, 1),
                 std::make_shared<Blood>(display)};
 
         case SceneId::Birthday:
@@ -304,7 +298,7 @@ Scene createScene(SceneId id, MatrixPanel_I2S_DMA& display)
             return {
                 std::make_shared<ClearScreen>(display),
                 std::make_shared<Stars>(display),
-                std::make_shared<Bitmap>(display, *newyear_bitmap, 34, 32),
+                std::make_shared<FlyingPng>(display, "/bitmaps/champagne.png", XPOS_CENTER, YPOS_CENTER),
                 std::make_shared<FireWorks>(display, -200),
                 std::make_shared<FireWorks>(display, -200),
                 std::make_shared<FireWorks>(display, -200),

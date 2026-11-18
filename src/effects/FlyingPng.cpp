@@ -1,4 +1,4 @@
-#include "PngEffect.h"
+#include "FlyingPng.h"
 #include <LittleFS.h>
 #include <PNGdec.h>
 #include <memory>
@@ -113,7 +113,7 @@ void pngDrawCallback(PNGDRAW *pDraw)
 
 } // namespace
 
-PngEffect::PngEffect(
+FlyingPng::FlyingPng(
     Adafruit_GFX &matrix,
     const char *filepath,
     int16_t x,
@@ -134,7 +134,7 @@ PngEffect::PngEffect(
     }
 }
 
-PngEffect::PngEffect(
+FlyingPng::FlyingPng(
     Adafruit_GFX &matrix,
     const uint8_t *png_data,
     size_t png_size,
@@ -156,7 +156,7 @@ PngEffect::PngEffect(
     }
 }
 
-bool PngEffect::decodeFromFs(const char *filepath)
+bool FlyingPng::decodeFromFs(const char *filepath)
 {
     auto png = std::make_unique<PNG>();
     const int rc = png->open(
@@ -168,7 +168,7 @@ bool PngEffect::decodeFromFs(const char *filepath)
         pngDrawCallback
     );
     if (rc != PNG_SUCCESS) {
-        Serial.printf("PngEffect: failed to open '%s', rc=%d\n", filepath, rc);
+        Serial.printf("FlyingPng: failed to open '%s', rc=%d\n", filepath, rc);
         return false;
     }
 
@@ -191,7 +191,7 @@ bool PngEffect::decodeFromFs(const char *filepath)
     png->close();
 
     if (dec_rc != PNG_SUCCESS) {
-        Serial.printf("PngEffect: decode error '%s', rc=%d\n", filepath, dec_rc);
+        Serial.printf("FlyingPng: decode error '%s', rc=%d\n", filepath, dec_rc);
         return false;
     }
 
@@ -199,14 +199,14 @@ bool PngEffect::decodeFromFs(const char *filepath)
     return true;
 }
 
-bool PngEffect::decodeFromRam(const uint8_t *data, size_t size)
+bool FlyingPng::decodeFromRam(const uint8_t *data, size_t size)
 {
     if (!data || size == 0) return false;
 
     auto png = std::make_unique<PNG>();
     const int rc = png->openRAM(const_cast<uint8_t *>(data), static_cast<int>(size), pngDrawCallback);
     if (rc != PNG_SUCCESS) {
-        Serial.printf("PngEffect: failed to open RAM png, rc=%d\n", rc);
+        Serial.printf("FlyingPng: failed to open RAM png, rc=%d\n", rc);
         return false;
     }
 
@@ -229,7 +229,7 @@ bool PngEffect::decodeFromRam(const uint8_t *data, size_t size)
     png->close();
 
     if (dec_rc != PNG_SUCCESS) {
-        Serial.printf("PngEffect: decode RAM error, rc=%d\n", dec_rc);
+        Serial.printf("FlyingPng: decode RAM error, rc=%d\n", dec_rc);
         return false;
     }
 
@@ -237,7 +237,7 @@ bool PngEffect::decodeFromRam(const uint8_t *data, size_t size)
     return true;
 }
 
-void PngEffect::render()
+void FlyingPng::render()
 {
     if (!m_valid || m_rgb.empty()) return;
 
@@ -266,17 +266,17 @@ void PngEffect::render()
     }
 }
 
-bool PngEffect::draw(Adafruit_GFX &matrix, const char *filepath, int16_t x, int16_t y)
+bool FlyingPng::draw(Adafruit_GFX &matrix, const char *filepath, int16_t x, int16_t y)
 {
-    PngEffect temp(matrix, filepath, x, y);
+    FlyingPng temp(matrix, filepath, x, y);
     if (!temp.isValid()) return false;
     temp.render();
     return true;
 }
 
-bool PngEffect::draw(Adafruit_GFX &matrix, const uint8_t *png_data, size_t png_size, int16_t x, int16_t y)
+bool FlyingPng::draw(Adafruit_GFX &matrix, const uint8_t *png_data, size_t png_size, int16_t x, int16_t y)
 {
-    PngEffect temp(matrix, png_data, png_size, x, y);
+    FlyingPng temp(matrix, png_data, png_size, x, y);
     if (!temp.isValid()) return false;
     temp.render();
     return true;

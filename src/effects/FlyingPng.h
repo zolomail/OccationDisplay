@@ -4,11 +4,12 @@
 #include <vector>
 #include <cstdint>
 
-class PngEffect : public Effect
+class FlyingPng : public Effect
 {
 public:
     // Construct from a LittleFS file path (e.g. "/bitmaps/ufo.png" or "/weather/sunny_day.png")
-    PngEffect(
+    // With optional initial position (XPOS_CENTER, etc.) and velocities (dx, dy in 1/16th pixels)
+    FlyingPng(
         Adafruit_GFX &matrix,
         const char *filepath,
         int16_t x = XPOS_CENTER,
@@ -18,7 +19,7 @@ public:
     );
 
     // Construct from an in-memory PNG byte buffer (e.g. PROGMEM array)
-    PngEffect(
+    FlyingPng(
         Adafruit_GFX &matrix,
         const uint8_t *png_data,
         size_t png_size,
@@ -28,7 +29,7 @@ public:
         int16_t dy = 0
     );
 
-    ~PngEffect() override = default;
+    ~FlyingPng() override = default;
 
     void render() override;
 
@@ -56,3 +57,6 @@ private:
     std::vector<uint16_t> m_rgb;
     std::vector<uint8_t>  m_mask;
 };
+
+// Alias for backwards compatibility
+using PngEffect = FlyingPng;

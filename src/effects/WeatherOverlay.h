@@ -2,7 +2,7 @@
 
 #include "Effect.h"
 #include "Weather.h"
-#include "PngEffect.h"
+#include "FlyingPng.h"
 #include <memory>
 
 class WeatherOverlay : public Effect
@@ -29,7 +29,7 @@ private:
 	uint16_t m_color;
 	uint8_t  m_font;
 
-	std::unique_ptr<PngEffect> m_cached_png;
+	std::unique_ptr<FlyingPng> m_cached_png;
 	String                     m_cached_png_path;
 	int16_t                    m_cached_x{-999};
 	int16_t                    m_cached_y{-999};

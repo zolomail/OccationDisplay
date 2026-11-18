@@ -61,7 +61,7 @@ void WeatherOverlay::drawIcon(int16_t x, int16_t y, WeatherCondition cond)
 
 	// Load and cache PNG icon; reload only if icon path or position changes
 	if (!m_cached_png || m_cached_png_path != png_path || m_cached_x != x || m_cached_y != y) {
-		m_cached_png = std::make_unique<PngEffect>(m_matrix, png_path, x, y);
+		m_cached_png = std::make_unique<FlyingPng>(m_matrix, png_path, x, y);
 		m_cached_png_path = png_path;
 		m_cached_x = x;
 		m_cached_y = y;
