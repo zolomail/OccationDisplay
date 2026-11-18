@@ -136,12 +136,14 @@ Scene createScene(SceneId id, MatrixPanel_I2S_DMA& display)
         case SceneId::WifiUnknown:
             return {
                 std::make_shared<ClearScreen>(display),
-                std::make_shared<FlyingText>(display, "Unknown SSID", XPOS_CENTER, 28, 0, 0, Colors::RED, TINY_WIDE_FONT)};
+                std::make_shared<FlyingText>(display, "Unknown SSID", XPOS_CENTER, 28, 0, 0, Colors::RED, TINY_WIDE_FONT)
+            };
 
         case SceneId::WifiStopped:
             return {
                 std::make_shared<ClearScreen>(display),
-                std::make_shared<FlyingText>(display, "WiFi Stopped", XPOS_CENTER, 28, 0, 0, Colors::RED, TINY_WIDE_FONT)};
+                std::make_shared<FlyingText>(display, "WiFi Stopped", XPOS_CENTER, 28, 0, 0, Colors::RED, TINY_WIDE_FONT)
+            };
 
         case SceneId::Test:
             return {
@@ -175,20 +177,23 @@ Scene createScene(SceneId id, MatrixPanel_I2S_DMA& display)
                 std::make_shared<ClearScreen>(display),
                 std::make_shared<ScrollText>(display, WebUi::scrollText(), 26, -10, Colors::RED, TINY_WIDE_FONT),
                 std::make_shared<ShowTime>(display, current_time, XPOS_CENTER, YPOS_CENTER, 0, 0, Colors::BLUE, NORMAL_FONT, true),
-                std::make_shared<WeatherOverlay>(display, 0, 0, Colors::CYAN)};
+                std::make_shared<WeatherOverlay>(display, 0, 0, Colors::CYAN)
+            };
 
         case SceneId::JustSnow:
             return {
                 std::make_shared<ClearScreen>(display),
                 std::make_shared<ScrollText>(display, WebUi::scrollText(), YPOS_CENTER, -10, Colors::RED, TINY_WIDE_FONT),
                 std::make_shared<SnowScape>(display, 50, 10),
-                std::make_shared<WeatherOverlay>(display, 0, 0, Colors::CYAN)};
+                std::make_shared<WeatherOverlay>(display, XPOS_RIGHT-12-4*6, 0, Colors::CYAN)
+            };
 
         case SceneId::Aquatic:
             return {
                 std::make_shared<ClearScreen>(display),
                 std::make_shared<ShowTime>(display, current_time, XPOS_CENTER, YPOS_CENTER, 0, 0, Colors::ORANGE, TINY_WIDE_FONT, true),
-                std::make_shared<BubblesInt>(display, 16)};
+                std::make_shared<BubblesInt>(display, 16)
+            };
 
         case SceneId::FlamingHot:
             return {
@@ -209,11 +214,12 @@ Scene createScene(SceneId id, MatrixPanel_I2S_DMA& display)
         case SceneId::ValentinesDay:
             return {
                 std::make_shared<ClearScreen>(display),
-                std::make_shared<ShowTime>(display, current_time, XPOS_CENTER, YPOS_CENTER, 0, 0, Colors::PURPLE, TINY_WIDE_FONT, true),
-                std::make_shared<ScrollText>(display, WebUi::scrollText(), YPOS_CENTER, -10, Colors::RED, TINY_WIDE_FONT),
-                std::make_shared<Hearts>(display, 16)};
+                std::make_shared<Hearts>(display, 16),
+                std::make_shared<ShowTime>(display, current_time, XPOS_CENTER, YPOS_1_QUART, 0, 0, Colors::PURPLE, TINY_WIDE_FONT, true),
+                std::make_shared<ScrollText>(display, WebUi::scrollText(), YPOS_3_QUART, -10, Colors::RED, TINY_WIDE_FONT)
+            };
 
-        case SceneId::CubeEffect:
+            case SceneId::CubeEffect:
             return {
                 std::make_shared<ClearScreen>(display),
                 std::make_shared<Stars>(display, 25),
