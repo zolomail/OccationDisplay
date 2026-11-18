@@ -80,7 +80,9 @@ constexpr SceneOption SCENE_OPTIONS[] = {
     { SceneId::Test2,            "Test 2"           },
     { SceneId::Test3,            "Test 3"           },
     { SceneId::Test4,            "Test 4"           },
-    { SceneId::Test5,            "Test 5"           }
+    { SceneId::Test5,            "Test 5"           },
+    { SceneId::FullscreenTest,   "FullscreenTest"   }
+    
 };
 
 void connectStation()
@@ -261,7 +263,7 @@ esp_err_t handleOptionsHttp(httpd_req_t* req)
     String val;
     if (getFormArg(body, "scene_id", val)) {
         const int id = val.toInt();
-        if (id >= static_cast<int>(SceneId::None) && id <= static_cast<int>(SceneId::Test5)) {
+        if (id >= static_cast<int>(SceneId::Welcome) && id <= static_cast<int>(SceneId::None)) {
             selected_scene = static_cast<SceneId>(id);
         }
     }

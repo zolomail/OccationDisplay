@@ -65,6 +65,7 @@ namespace Config
 
     constexpr uint8_t  BRIGHTNESS    = 32;
     constexpr uint32_t FRAME_TIME_MS = 40; // ~25 FPS
+    constexpr bool     SHOW_CPU_LOAD_BAR = true; // 1-pixel CPU load bar on far right column
 
     // POSIX timezone string for Central European Time with automatic DST
     constexpr char     TZ_INFO[]     = "CET-1CEST,M3.5.0,M10.5.0/3";
@@ -177,7 +178,7 @@ Scene createScene(SceneId id, MatrixPanel_I2S_DMA& display)
                 std::make_shared<ClearScreen>(display),
                 std::make_shared<ScrollText>(display, WebUi::scrollText(), 26, -10, Colors::RED, TINY_WIDE_FONT),
                 std::make_shared<ShowTime>(display, current_time, XPOS_CENTER, YPOS_CENTER, 0, 0, Colors::BLUE, NORMAL_FONT, true),
-                std::make_shared<WeatherOverlay>(display, 0, 0, Colors::CYAN)
+                std::make_shared<WeatherOverlay>(display, XPOS_CENTER, 0, Colors::CYAN)
             };
 
         case SceneId::JustSnow:
@@ -185,7 +186,7 @@ Scene createScene(SceneId id, MatrixPanel_I2S_DMA& display)
                 std::make_shared<ClearScreen>(display),
                 std::make_shared<ScrollText>(display, WebUi::scrollText(), YPOS_CENTER, -10, Colors::RED, TINY_WIDE_FONT),
                 std::make_shared<SnowScape>(display, 50, 10),
-                std::make_shared<WeatherOverlay>(display, XPOS_RIGHT-12-4*6, 0, Colors::CYAN)
+                std::make_shared<WeatherOverlay>(display, XPOS_RIGHT, 0, Colors::CYAN)
             };
 
         case SceneId::Aquatic:
@@ -298,7 +299,8 @@ Scene createScene(SceneId id, MatrixPanel_I2S_DMA& display)
                 std::make_shared<FireWorks>(display),
                 std::make_shared<FlyingText>(display, "Happy New Year", XPOS_CENTER, 5, 0, 0, Colors::BLUE),
                 std::make_shared<FlyingText>(display, String(current_year + 1), XPOS_CENTER, 13, 0, 0, Colors::WHITE),
-                std::make_shared<ShowTime>(display, current_time, XPOS_CENTER, 21, 0, 0, Colors::CYAN)};
+                std::make_shared<ShowTime>(display, current_time, XPOS_CENTER, 21, 0, 0, Colors::CYAN)
+            };
 
         case SceneId::NewYearsMidnight:
             return {
@@ -308,42 +310,52 @@ Scene createScene(SceneId id, MatrixPanel_I2S_DMA& display)
                 std::make_shared<FireWorks>(display, -200),
                 std::make_shared<FireWorks>(display, -200),
                 std::make_shared<FireWorks>(display, -200),
-                std::make_shared<FlyingText>(display, "Happy New Year", XPOS_CENTER, 12, 0, 0, Colors::BLUE)};
+                std::make_shared<FlyingText>(display, "Happy New Year", XPOS_CENTER, 12, 0, 0, Colors::BLUE)
+            };
 
         case SceneId::Test1:
             return {
                 std::make_shared<ClearScreen>(display),
                 std::make_shared<Border>(display, 2, Colors::RED, Colors::YELLOW, BorderPattern::Solid),
-                std::make_shared<FlyingText>(display, "Test 1: Solid", XPOS_CENTER, YPOS_CENTER, 0, 0, Colors::WHITE, TINY_WIDE_FONT)};
+                std::make_shared<FlyingText>(display, "Test 1: Solid", XPOS_CENTER, YPOS_CENTER, 0, 0, Colors::WHITE, TINY_WIDE_FONT)
+            };
 
         case SceneId::Test2:
             return {
                 std::make_shared<ClearScreen>(display),
                 std::make_shared<Border>(display, 2, Colors::RED, Colors::WHITE, BorderPattern::Dashed, 4, 2),
-                std::make_shared<FlyingText>(display, "Test 2: Dashed", XPOS_CENTER, YPOS_CENTER, 0, 0, Colors::WHITE, TINY_WIDE_FONT)};
+                std::make_shared<FlyingText>(display, "Test 2: Dashed", XPOS_CENTER, YPOS_CENTER, 0, 0, Colors::WHITE, TINY_WIDE_FONT)
+            };
 
         case SceneId::Test3:
             return {
                 std::make_shared<ClearScreen>(display),
                 std::make_shared<Border>(display, 2, Colors::CYAN, Colors::BLUE, BorderPattern::Chase, 8, 3),
-                std::make_shared<FlyingText>(display, "Test 3: Chase", XPOS_CENTER, YPOS_CENTER, 0, 0, Colors::WHITE, TINY_WIDE_FONT)};
+                std::make_shared<FlyingText>(display, "Test 3: Chase", XPOS_CENTER, YPOS_CENTER, 0, 0, Colors::WHITE, TINY_WIDE_FONT)
+            };
 
         case SceneId::Test4:
             return {
                 std::make_shared<ClearScreen>(display),
                 std::make_shared<Border>(display, 2, Colors::YELLOW, Colors::PURPLE, BorderPattern::Twinkle, 3, 2),
-                std::make_shared<FlyingText>(display, "Test 4: Twinkle", XPOS_CENTER, YPOS_CENTER, 0, 0, Colors::WHITE, TINY_WIDE_FONT)};
+                std::make_shared<FlyingText>(display, "Test 4: Twinkle", XPOS_CENTER, YPOS_CENTER, 0, 0, Colors::WHITE, TINY_WIDE_FONT)
+            };
 
         case SceneId::Test5:
             return {
                 std::make_shared<ClearScreen>(display),
                 std::make_shared<Border>(display, 2, Colors::WHITE, Colors::BLACK, BorderPattern::Rainbow, 4, 3),
-                std::make_shared<FlyingText>(display, "Test 5: Rainbow", XPOS_CENTER, YPOS_CENTER, 0, 0, Colors::WHITE, TINY_WIDE_FONT)};
+                std::make_shared<FlyingText>(display, "Test 5: Rainbow", XPOS_CENTER, YPOS_CENTER, 0, 0, Colors::WHITE, TINY_WIDE_FONT)
+            };
 
+        case SceneId::FullscreenTest:
+            return {
+                std::make_shared<FlyingPng>(display, "/fullscreen/golfer.png", 0, 0, false)
+            };
         case SceneId::None:
         default:
             return {};
-    }
+        }
 }
 
 void renderScene(SceneId id)
@@ -500,12 +512,66 @@ void BlinkLed(uint32_t frame_start, bool overloaded)
     }
 }
 
+void drawCpuLoadBar(uint32_t render_us, uint32_t budget_us)
+{
+    if (!dma_display) return;
+
+    const int16_t x = dma_display->width() - 1;
+    const int16_t screen_h = dma_display->height();
+
+    // Instantaneous load with slight smoothing (EMA) to prevent single-frame flicker
+    static float smoothed_load = 0.0f;
+    const float current_load = static_cast<float>(render_us) / static_cast<float>(budget_us);
+    smoothed_load = (smoothed_load * 0.70f) + (current_load * 0.30f);
+
+    int16_t bar_h = static_cast<int16_t>(lroundf(smoothed_load * screen_h));
+    if (bar_h < 0) bar_h = 0;
+    if (bar_h > screen_h) bar_h = screen_h;
+
+    // Peak-hold dot tracking with decay
+    static int16_t peak_dot = 0;
+    static uint32_t last_peak_decay = 0;
+    if (bar_h >= peak_dot) {
+        peak_dot = bar_h;
+    } else if (millis() - last_peak_decay >= 60) {
+        last_peak_decay = millis();
+        if (peak_dot > 0) peak_dot--;
+    }
+
+    // 1. Clear background of empty top section of meter column
+    for (int16_t h = bar_h; h < screen_h; ++h) {
+        const int16_t y = (screen_h - 1) - h;
+        dma_display->drawPixel(x, y, Colors::BLACK);
+    }
+
+    // 2. Draw meter bar from bottom up (Green -> Yellow -> Red)
+    for (int16_t h = 0; h < bar_h; ++h) {
+        const int16_t y = (screen_h - 1) - h;
+        uint16_t col;
+        if (h >= 26) {
+            col = Colors::RED;       // > ~80% load
+        } else if (h >= 16) {
+            col = Colors::YELLOW;    // 50% - 80% load
+        } else {
+            col = Colors::GREEN;     // < 50% load
+        }
+        dma_display->drawPixel(x, y, col);
+    }
+
+    // 3. Peak-hold indicator
+    if (peak_dot > 0 && peak_dot <= screen_h) {
+        const int16_t peak_y = (screen_h - 1) - (peak_dot - 1);
+        dma_display->drawPixel(x, peak_y, (peak_dot >= 26) ? Colors::RED : Colors::WHITE);
+    }
+}
+
 // =========================================================================
 // Main Loop (~25 FPS)
 // =========================================================================
 void loop()
 {
     const uint32_t frame_start = millis();
+    const uint32_t frame_start_us = micros();
 
     if (WebUi::isApMode()) {
         // We are the Access Point (Show scene that displays connect info)
@@ -535,6 +601,12 @@ void loop()
             }
             ip_overlay->render();
         }
+    }
+
+    if (Config::SHOW_CPU_LOAD_BAR) {
+        const uint32_t render_us = micros() - frame_start_us;
+        const uint32_t budget_us = Config::FRAME_TIME_MS * 1000;
+        drawCpuLoadBar(render_us, budget_us);
     }
 
     dma_display->flipDMABuffer();

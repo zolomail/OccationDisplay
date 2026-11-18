@@ -9,15 +9,20 @@ struct DecodeContext {
     int width;
     int height;
     std::vector<uint16_t> *rgb;
-    std::vector<uint8_t>  *mask;
+    std::vector<uint8_t>  *mask; // Can be nullptr if use_transparency is false
     bool has_alpha;
     PNG *png;
 };
 
 void *pngOpenCallback(const char *szFilename, int32_t *pFileSize)
 {
+    if (!LittleFS.exists(szFilename)) {
+        Serial.printf("FlyingPng: file not found on LittleFS: '%s'\n", szFilename);
+        return nullptr;
+    }
     File f = LittleFS.open(szFilename, "r");
     if (!f || f.isDirectory()) {
+        Serial.printf("FlyingPng: failed to open file '%s'\n", szFilename);
         return nullptr;
     }
     *pFileSize = static_cast<int32_t>(f.size());
@@ -55,6 +60,7 @@ void pngDrawCallback(PNGDRAW *pDraw)
 
     const int w = pDraw->iWidth;
     const int row_bytes = (ctx->width + 7) / 8;
+    const bool build_mask = (ctx->mask != nullptr);
 
     if (pDraw->iPixelType == PNG_PIXEL_TRUECOLOR_ALPHA) {
         const uint8_t *src = pDraw->pPixels;
@@ -68,11 +74,13 @@ void pngDrawCallback(PNGDRAW *pDraw)
             const size_t pixel_idx = y * ctx->width + x;
             (*ctx->rgb)[pixel_idx] = color565(r, g, b);
 
-            if (a >= 32) {
-                const size_t mask_byte_idx = y * row_bytes + (x / 8);
-                (*ctx->mask)[mask_byte_idx] |= (0x80 >> (x % 8));
-            } else {
-                ctx->has_alpha = true;
+            if (build_mask) {
+                if (a >= 32) {
+                    const size_t mask_byte_idx = y * row_bytes + (x / 8);
+                    (*ctx->mask)[mask_byte_idx] |= (0x80 >> (x % 8));
+                } else {
+                    ctx->has_alpha = true;
+                }
             }
         }
     } else if (pDraw->iPixelType == PNG_PIXEL_TRUECOLOR) {
@@ -86,26 +94,35 @@ void pngDrawCallback(PNGDRAW *pDraw)
             const size_t pixel_idx = y * ctx->width + x;
             (*ctx->rgb)[pixel_idx] = color565(r, g, b);
 
-            const size_t mask_byte_idx = y * row_bytes + (x / 8);
-            (*ctx->mask)[mask_byte_idx] |= (0x80 >> (x % 8));
+            if (build_mask) {
+                const size_t mask_byte_idx = y * row_bytes + (x / 8);
+                (*ctx->mask)[mask_byte_idx] |= (0x80 >> (x % 8));
+            }
         }
     } else {
         // Indexed, grayscale, etc.
         std::vector<uint16_t> line_buffer(w);
         ctx->png->getLineAsRGB565(pDraw, line_buffer.data(), PNG_RGB565_LITTLE_ENDIAN, 0x0000);
-        std::vector<uint8_t> alpha_mask(row_bytes, 0);
-        const uint8_t has_trans = ctx->png->getAlphaMask(pDraw, alpha_mask.data(), 32);
-        if (has_trans) {
-            ctx->has_alpha = true;
+
+        bool has_trans = false;
+        std::vector<uint8_t> alpha_mask;
+        if (build_mask) {
+            alpha_mask.assign(row_bytes, 0);
+            has_trans = (ctx->png->getAlphaMask(pDraw, alpha_mask.data(), 32) != 0);
+            if (has_trans) {
+                ctx->has_alpha = true;
+            }
         }
 
         for (int x = 0; x < w && x < ctx->width; ++x) {
             const size_t pixel_idx = y * ctx->width + x;
             (*ctx->rgb)[pixel_idx] = line_buffer[x];
 
-            const size_t mask_byte_idx = y * row_bytes + (x / 8);
-            if (!has_trans || ((alpha_mask[x / 8] >> (7 - (x % 8))) & 1)) {
-                (*ctx->mask)[mask_byte_idx] |= (0x80 >> (x % 8));
+            if (build_mask) {
+                const size_t mask_byte_idx = y * row_bytes + (x / 8);
+                if (!has_trans || ((alpha_mask[x / 8] >> (7 - (x % 8))) & 1)) {
+                    (*ctx->mask)[mask_byte_idx] |= (0x80 >> (x % 8));
+                }
             }
         }
     }
@@ -119,15 +136,52 @@ FlyingPng::FlyingPng(
     int16_t x,
     int16_t y,
     int16_t dx,
-    int16_t dy
+    int16_t dy,
+    bool use_transparency
 ) :
     Effect(matrix),
     m_x(x),
     m_y(y),
     m_dx(dx),
-    m_dy(dy)
+    m_dy(dy),
+    m_use_transparency(use_transparency)
 {
     if (decodeFromFs(filepath)) {
+        m_x = resolveX(m_x, m_width) << 4;
+        m_y = resolveY(m_y, m_height) << 4;
+        m_valid = true;
+    }
+}
+
+FlyingPng::FlyingPng(
+    Adafruit_GFX &matrix,
+    const char *filepath,
+    int16_t x,
+    int16_t y,
+    bool use_transparency
+) :
+    FlyingPng(matrix, filepath, x, y, 0, 0, use_transparency)
+{
+}
+
+FlyingPng::FlyingPng(
+    Adafruit_GFX &matrix,
+    const uint8_t *png_data,
+    size_t png_size,
+    int16_t x,
+    int16_t y,
+    int16_t dx,
+    int16_t dy,
+    bool use_transparency
+) :
+    Effect(matrix),
+    m_x(x),
+    m_y(y),
+    m_dx(dx),
+    m_dy(dy),
+    m_use_transparency(use_transparency)
+{
+    if (decodeFromRam(png_data, png_size)) {
         m_x = resolveX(m_x, m_width) << 4;
         m_y = resolveY(m_y, m_height) << 4;
         m_valid = true;
@@ -140,20 +194,10 @@ FlyingPng::FlyingPng(
     size_t png_size,
     int16_t x,
     int16_t y,
-    int16_t dx,
-    int16_t dy
+    bool use_transparency
 ) :
-    Effect(matrix),
-    m_x(x),
-    m_y(y),
-    m_dx(dx),
-    m_dy(dy)
+    FlyingPng(matrix, png_data, png_size, x, y, 0, 0, use_transparency)
 {
-    if (decodeFromRam(png_data, png_size)) {
-        m_x = resolveX(m_x, m_width) << 4;
-        m_y = resolveY(m_y, m_height) << 4;
-        m_valid = true;
-    }
 }
 
 bool FlyingPng::decodeFromFs(const char *filepath)
@@ -175,18 +219,23 @@ bool FlyingPng::decodeFromFs(const char *filepath)
     m_width = png->getWidth();
     m_height = png->getHeight();
     if (m_width <= 0 || m_height <= 0 || m_width > 512 || m_height > 512) {
+        Serial.printf("FlyingPng: invalid image dimensions for '%s' (w=%d, h=%d)\n", filepath, m_width, m_height);
         png->close();
         return false;
     }
 
     const size_t total_pixels = m_width * m_height;
-    const size_t row_bytes = (m_width + 7) / 8;
-    const size_t total_mask_bytes = row_bytes * m_height;
-
     m_rgb.assign(total_pixels, 0);
-    m_mask.assign(total_mask_bytes, 0);
 
-    DecodeContext ctx{m_width, m_height, &m_rgb, &m_mask, false, png.get()};
+    if (m_use_transparency) {
+        const size_t row_bytes = (m_width + 7) / 8;
+        const size_t total_mask_bytes = row_bytes * m_height;
+        m_mask.assign(total_mask_bytes, 0);
+    } else {
+        m_mask.clear();
+    }
+
+    DecodeContext ctx{m_width, m_height, &m_rgb, m_use_transparency ? &m_mask : nullptr, false, png.get()};
     const int dec_rc = png->decode(&ctx, 0);
     png->close();
 
@@ -195,7 +244,7 @@ bool FlyingPng::decodeFromFs(const char *filepath)
         return false;
     }
 
-    m_has_alpha = ctx.has_alpha;
+    m_has_alpha = m_use_transparency && ctx.has_alpha;
     return true;
 }
 
@@ -218,13 +267,17 @@ bool FlyingPng::decodeFromRam(const uint8_t *data, size_t size)
     }
 
     const size_t total_pixels = m_width * m_height;
-    const size_t row_bytes = (m_width + 7) / 8;
-    const size_t total_mask_bytes = row_bytes * m_height;
-
     m_rgb.assign(total_pixels, 0);
-    m_mask.assign(total_mask_bytes, 0);
 
-    DecodeContext ctx{m_width, m_height, &m_rgb, &m_mask, false, png.get()};
+    if (m_use_transparency) {
+        const size_t row_bytes = (m_width + 7) / 8;
+        const size_t total_mask_bytes = row_bytes * m_height;
+        m_mask.assign(total_mask_bytes, 0);
+    } else {
+        m_mask.clear();
+    }
+
+    DecodeContext ctx{m_width, m_height, &m_rgb, m_use_transparency ? &m_mask : nullptr, false, png.get()};
     const int dec_rc = png->decode(&ctx, 0);
     png->close();
 
@@ -233,7 +286,7 @@ bool FlyingPng::decodeFromRam(const uint8_t *data, size_t size)
         return false;
     }
 
-    m_has_alpha = ctx.has_alpha;
+    m_has_alpha = m_use_transparency && ctx.has_alpha;
     return true;
 }
 
@@ -244,7 +297,7 @@ void FlyingPng::render()
     const int16_t cur_x = m_x >> 4;
     const int16_t cur_y = m_y >> 4;
 
-    if (m_has_alpha && !m_mask.empty()) {
+    if (m_use_transparency && m_has_alpha && !m_mask.empty()) {
         m_matrix.drawRGBBitmap(cur_x, cur_y, m_rgb.data(), m_mask.data(), m_width, m_height);
     } else {
         m_matrix.drawRGBBitmap(cur_x, cur_y, m_rgb.data(), m_width, m_height);
@@ -266,17 +319,17 @@ void FlyingPng::render()
     }
 }
 
-bool FlyingPng::draw(Adafruit_GFX &matrix, const char *filepath, int16_t x, int16_t y)
+bool FlyingPng::draw(Adafruit_GFX &matrix, const char *filepath, int16_t x, int16_t y, bool use_transparency)
 {
-    FlyingPng temp(matrix, filepath, x, y);
+    FlyingPng temp(matrix, filepath, x, y, use_transparency);
     if (!temp.isValid()) return false;
     temp.render();
     return true;
 }
 
-bool FlyingPng::draw(Adafruit_GFX &matrix, const uint8_t *png_data, size_t png_size, int16_t x, int16_t y)
+bool FlyingPng::draw(Adafruit_GFX &matrix, const uint8_t *png_data, size_t png_size, int16_t x, int16_t y, bool use_transparency)
 {
-    FlyingPng temp(matrix, png_data, png_size, x, y);
+    FlyingPng temp(matrix, png_data, png_size, x, y, use_transparency);
     if (!temp.isValid()) return false;
     temp.render();
     return true;

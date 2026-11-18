@@ -5,8 +5,7 @@
 #include "effects/Effect.h"
 
 enum class SceneId : uint8_t {
-	None = 0,
-	Welcome,
+	Welcome = 0,	//Must be first
 	Connecting,
 	SetupAp,
 	WifiUnknown,
@@ -32,7 +31,9 @@ enum class SceneId : uint8_t {
 	Test2,
 	Test3,
 	Test4,
-	Test5
+	Test5,
+	FullscreenTest,
+	None	// Must be last
 };
 
 class Scene : public std::vector<std::shared_ptr<Effect>>

@@ -20,6 +20,7 @@ Scroller and occation animation display on multiple 64x32 led segment displays u
     3: More effects:
         Animated sprites (fish, birds)
         Christmas tree
+        Stars warpspace
 
     4: More Scenes
         Full screen weather
@@ -32,10 +33,14 @@ Scroller and occation animation display on multiple 64x32 led segment displays u
         Is it friday?
         Daily/Weekly Reminder (weekend/bedtime)?
 
-    5: Custom scenes
+    5: Custom scenes where you can select one background effect (clearScreen, flames, wavesim, Bumpmap ) and up to 5 additional (other effects)
     6: Show events from calendar (eg google calendar)
     8: When not being able to connect to WIfi show QR code for the WIFi API ESP32 provides..and the IP to connect to
     9: Allow setting outline color for for Hearts and Bubbles 
     10: Golf player on grass standing on right side and flag and hole on the right side (tracman logo scrolling in background and countdown to beta)
-    11: Add CPU load debug info bar on right side of display (from bottom to top indicating how loaded the cpu is)
-    12: Fix snow piling up on the left side of the display
+
+To upload use:
+    pio run -t upload
+
+To upload data files:
+    pio run -t uploadfs
