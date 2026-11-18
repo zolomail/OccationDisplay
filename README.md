@@ -38,6 +38,7 @@ Scroller and occation animation display on multiple 64x32 led segment displays u
     8: When not being able to connect to WIfi show QR code for the WIFi API ESP32 provides..and the IP to connect to
     9: Allow setting outline color for for Hearts and Bubbles 
     10: Golf player on grass standing on right side and flag and hole on the right side (tracman logo scrolling in background and countdown to beta)
+    11: Dirty rectangel updating...(Fullscreen update every frame max out cpu)
 
 To upload use:
     pio run -t upload

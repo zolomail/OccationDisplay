@@ -1,4 +1,5 @@
 #include "FlyingPng.h"
+#include "FastHub75.h"
 #include <LittleFS.h>
 #include <PNGdec.h>
 #include <memory>
@@ -137,14 +138,16 @@ FlyingPng::FlyingPng(
     int16_t y,
     int16_t dx,
     int16_t dy,
-    bool use_transparency
+    bool use_transparency,
+    bool static_idle
 ) :
     Effect(matrix),
     m_x(x),
     m_y(y),
     m_dx(dx),
     m_dy(dy),
-    m_use_transparency(use_transparency)
+    m_use_transparency(use_transparency),
+    m_static_idle(static_idle)
 {
     if (decodeFromFs(filepath)) {
         m_x = resolveX(m_x, m_width) << 4;
@@ -155,49 +158,28 @@ FlyingPng::FlyingPng(
 
 FlyingPng::FlyingPng(
     Adafruit_GFX &matrix,
-    const char *filepath,
-    int16_t x,
-    int16_t y,
-    bool use_transparency
-) :
-    FlyingPng(matrix, filepath, x, y, 0, 0, use_transparency)
-{
-}
-
-FlyingPng::FlyingPng(
-    Adafruit_GFX &matrix,
     const uint8_t *png_data,
     size_t png_size,
     int16_t x,
     int16_t y,
     int16_t dx,
     int16_t dy,
-    bool use_transparency
+    bool use_transparency,
+    bool static_idle
 ) :
     Effect(matrix),
     m_x(x),
     m_y(y),
     m_dx(dx),
     m_dy(dy),
-    m_use_transparency(use_transparency)
+    m_use_transparency(use_transparency),
+    m_static_idle(static_idle)
 {
     if (decodeFromRam(png_data, png_size)) {
         m_x = resolveX(m_x, m_width) << 4;
         m_y = resolveY(m_y, m_height) << 4;
         m_valid = true;
     }
-}
-
-FlyingPng::FlyingPng(
-    Adafruit_GFX &matrix,
-    const uint8_t *png_data,
-    size_t png_size,
-    int16_t x,
-    int16_t y,
-    bool use_transparency
-) :
-    FlyingPng(matrix, png_data, png_size, x, y, 0, 0, use_transparency)
-{
 }
 
 bool FlyingPng::decodeFromFs(const char *filepath)
@@ -294,14 +276,27 @@ void FlyingPng::render()
 {
     if (!m_valid || m_rgb.empty()) return;
 
+    if (m_static_idle && m_dx == 0 && m_dy == 0) {
+        if (m_frames_rendered >= 2) {
+            return; // Front & back double-buffers are already painted!
+        }
+        ++m_frames_rendered;
+    }
+
     const int16_t cur_x = m_x >> 4;
     const int16_t cur_y = m_y >> 4;
 
-    if (m_use_transparency && m_has_alpha && !m_mask.empty()) {
-        m_matrix.drawRGBBitmap(cur_x, cur_y, m_rgb.data(), m_mask.data(), m_width, m_height);
-    } else {
-        m_matrix.drawRGBBitmap(cur_x, cur_y, m_rgb.data(), m_width, m_height);
-    }
+    auto *hub75 = static_cast<MatrixPanel_I2S_DMA *>(&m_matrix);
+    FastHub75::drawRGBBitmap(
+        *hub75,
+        cur_x,
+        cur_y,
+        m_rgb.data(),
+        (m_use_transparency && m_has_alpha && !m_mask.empty()) ? m_mask.data() : nullptr,
+        m_width,
+        m_height,
+        m_use_transparency && m_has_alpha
+    );
 
     // Handle bouncing physics if dx/dy non-zero
     if (m_dx != 0) {

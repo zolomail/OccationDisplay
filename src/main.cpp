@@ -5,6 +5,7 @@
 
 #include <WiFi.h>
 #include <LittleFS.h>
+//#define PIXEL_COLOR_DEPTH_BITS 6
 #include <ESP32-HUB75-MatrixPanel-I2S-DMA.h>
 
 // Custom Scene, Service & Effect Headers
@@ -350,7 +351,7 @@ Scene createScene(SceneId id, MatrixPanel_I2S_DMA& display)
 
         case SceneId::FullscreenTest:
             return {
-                std::make_shared<FlyingPng>(display, "/fullscreen/golfer.png", 0, 0, false)
+                std::make_shared<FlyingPng>(display, "/fullscreen/golfer.png", 0, 0, 0, 0, false, true)
             };
         case SceneId::None:
         default:
