@@ -14,7 +14,6 @@ SceneId selectedScene();
 bool    showIp();
 bool    consumeSceneDirty();
 
-const String& scrollText();
 const String& wifiError();
 const char*   apSsid();
 const char*   apPassword();

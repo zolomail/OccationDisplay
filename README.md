@@ -9,14 +9,7 @@ To upload data files:
 
 
 #TODO:
-    1: On the webUi make it so when selecting a scene to show the user should be able to configure the parameters:
-        Scroll text(s)
-        Scroll position and speed
-        Colors
-        Fonts
-        etc.
-
-    2: Add user configurable scenes (replace selectDateScene ) the following should be specified:
+    2:  Add user configurable scenes (replace selectDateScene ) the following should be specified:
         which scene
         start: month, day, hour
         end:   month, day, hour
@@ -46,4 +39,5 @@ To upload data files:
     9: Allow setting outline color for for Hearts and Bubbles 
     10: Golf player on grass standing on right side and flag and hole on the right side (tracman logo scrolling in background and countdown to beta)
     11: Dirty rectangel updating...(Fullscreen update every frame max out cpu)
-
+    12: WebUi should get font list from enum in Effects.h
+    13: Move web templates out into filesystem

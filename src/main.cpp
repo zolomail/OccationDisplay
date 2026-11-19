@@ -71,6 +71,7 @@ namespace Config
     // POSIX timezone string for Central European Time with automatic DST
     constexpr char     TZ_INFO[]     = "CET-1CEST,M3.5.0,M10.5.0/3";
     constexpr char     NTP_SERVER[]  = "pool.ntp.org";
+    constexpr char     DEFAULT_SCROLL[] = "put your text here now --- \x80\x80\x80 --- ";
 }
 
 // =========================================================================
@@ -98,275 +99,254 @@ tm current_time{};
 std::unique_ptr<FlyingText> ip_overlay;
 IPAddress                   cached_ip;
 
+std::unique_ptr<Scene> active_scene;
+SceneId                active_scene_id = SceneId::None;
+
 // =========================================================================
 // On-Demand Scene Management
 // =========================================================================
-Scene   active_scene;
-SceneId active_scene_id = SceneId::None;
 
-Scene createScene(SceneId id, MatrixPanel_I2S_DMA& display)
+std::unique_ptr<Scene> createScene(SceneId id, MatrixPanel_I2S_DMA &display)
 {
     const int current_year = (current_time.tm_year >= 120) ? (current_time.tm_year + 1900) : 2020;
+    auto scene = std::make_unique<Scene>(id, display);
 
-    switch (id)
-    {
+    switch (id) {
         case SceneId::Connecting:
-            return {
-                std::make_shared<ClearScreen>(display),
-                std::make_shared<FlyingText>(display, "Connecting...", XPOS_CENTER, YPOS_CENTER, 0, 0, Colors::ORANGE, TINY_WIDE_FONT)};
+            scene->add_effect<ClearScreen>();
+            scene->add_effect<FlyingText>("Connecting...", XPOS_CENTER, YPOS_CENTER, 0, 0, Colors::ORANGE, TINY_WIDE_FONT);
+            break;
 
         case SceneId::Welcome:
-            return {
-                std::make_shared<ClearScreen>(display),
-                std::make_shared<Border>(display, 2, Colors::WHITE, Colors::BLUE, BorderPattern::Dashed, 4, 1),
-                std::make_shared<FlyingText>(display, "-OCCATION DISPLAY-", XPOS_CENTER, YPOS_CENTER, 0, 0, Colors::RED)};
+            scene->add_effect<ClearScreen>();
+            scene->add_effect<Border>(2, Colors::WHITE, Colors::BLUE, BorderPattern::Dashed, 4, 1);
+            scene->add_effect<FlyingText>("-OCCATION DISPLAY-", XPOS_CENTER, YPOS_CENTER, 0, 0, Colors::RED);
+            break;
 
         case SceneId::SetupAp:
-        {
-            Scene scene = {
-                std::make_shared<ClearScreen>(display),
-                std::make_shared<FlyingText>(display, String("SSID : ") + WebUi::apSsid(), 0, 7, 0, 0, Colors::WHITE),
-                std::make_shared<FlyingText>(display, String("Pass : ") + WebUi::apPassword(), 0, 15, 0, 0, Colors::WHITE),
-                std::make_shared<FlyingText>(display, String("IpAdr: ") + WiFi.localIP().toString() , 0, 23, 0, 0, Colors::WHITE)
-            };
-            if (WebUi::wifiError().length() > 0)
-            {
-                scene.push_back(std::make_shared<FlyingText>(display, WebUi::wifiError(), XPOS_CENTER, 0, 0, 0, Colors::RED, TINY_WIDE_FONT));
+            scene->add_effect<ClearScreen>();
+            scene->add_effect<FlyingText>(String("SSID : ") + WebUi::apSsid(), 0, 7, 0, 0, Colors::WHITE);
+            scene->add_effect<FlyingText>(String("Pass : ") + WebUi::apPassword(), 0, 15, 0, 0, Colors::WHITE);
+            scene->add_effect<FlyingText>(String("IpAdr: ") + WiFi.localIP().toString(), 0, 23, 0, 0, Colors::WHITE);
+            if (WebUi::wifiError().length() > 0) {
+                scene->add_effect<FlyingText>(WebUi::wifiError(), XPOS_CENTER, 0, 0, 0, Colors::RED, TINY_WIDE_FONT);
             }
-            return scene;
-        }
+            break;
+
         case SceneId::WifiUnknown:
-            return {
-                std::make_shared<ClearScreen>(display),
-                std::make_shared<FlyingText>(display, "Unknown SSID", XPOS_CENTER, 28, 0, 0, Colors::RED, TINY_WIDE_FONT)
-            };
+            scene->add_effect<ClearScreen>();
+            scene->add_effect<FlyingText>("Unknown SSID", XPOS_CENTER, 28, 0, 0, Colors::RED, TINY_WIDE_FONT);
+            break;
 
         case SceneId::WifiStopped:
-            return {
-                std::make_shared<ClearScreen>(display),
-                std::make_shared<FlyingText>(display, "WiFi Stopped", XPOS_CENTER, 28, 0, 0, Colors::RED, TINY_WIDE_FONT)
-            };
+            scene->add_effect<ClearScreen>();
+            scene->add_effect<FlyingText>("WiFi Stopped", XPOS_CENTER, 28, 0, 0, Colors::RED, TINY_WIDE_FONT);
+            break;
 
-        case SceneId::Test:
-            return {
-                std::make_shared<ClearScreen>(display),
-                std::make_shared<Stars>(display),
-                std::make_shared<FunkyLine>(display, 0, 3, color565(255, 0, 0)),
-                std::make_shared<FunkyLine>(display, 5, 3, color565(255, 100, 0)),
-                std::make_shared<FunkyLine>(display, 10, 3, color565(255, 200, 100)),
-                std::make_shared<FunkyLine>(display, 15, 3, color565(255, 255, 200)),
-                std::make_shared<FunkyLine>(display, 20, 3, color565(255, 255, 255)),
-                std::make_shared<FlyingText>(display, "*", 20, 10, -2, -1, Colors::RED),
-                std::make_shared<FlyingText>(display, "+", 100, 20, 1, -2, Colors::GREEN),
-                std::make_shared<FlyingText>(display, "o", 80, 24, 2, -2, Colors::CYAN),
-                std::make_shared<ShowTime>(display, current_time, XPOS_CENTER, YPOS_CENTER, 0, 0, Colors::BLUE, NORMAL_FONT, true),
-                std::make_shared<Circle>(display),
-                std::make_shared<Circle>(display, 80, 20, 12, Colors::BLUE),
-                std::make_shared<ScrollText>(
-                    display,
-                    "\x20\x21\x22\x23\x24\x25\x26\x27\x28\x29\x2A\x2B\x2C\x2D\x2E\x2F"
-                    "\x30\x31\x32\x33\x34\x35\x36\x37\x38\x39\x3A\x3B\x3C\x3D\x3E\x3F"
-                    "\x40\x41\x42\x43\x44\x45\x46\x47\x48\x49\x4A\x4B\x4C\x4D\x4E\x4F"
-                    "\x50\x51\x52\x53\x54\x55\x56\x57\x58\x59\x5A\x5B\x5C\x5D\x5E\x5F"
-                    "\x60\x61\x62\x63\x64\x65\x66\x67\x68\x69\x6A\x6B\x6C\x6D\x6E\x6F"
-                    "\x70\x71\x72\x73\x74\x75\x76\x77\x78\x79\x7A\x7B\x7C\x7D\x7E\x7F"
-                    "\x80\x81    ",
-                    22, -5, Colors::RED, TINY_WIDE_FONT)
-                };
-
-        case SceneId::NormalDays:
-            return {
-                std::make_shared<ClearScreen>(display),
-                std::make_shared<ScrollText>(display, WebUi::scrollText(), 26, -10, Colors::RED, TINY_WIDE_FONT),
-                std::make_shared<ShowTime>(display, current_time, XPOS_CENTER, YPOS_CENTER, 0, 0, Colors::BLUE, NORMAL_FONT, true),
-                std::make_shared<WeatherOverlay>(display, XPOS_CENTER, 0, Colors::CYAN)
-            };
-
-        case SceneId::JustSnow:
-            return {
-                std::make_shared<ClearScreen>(display),
-                std::make_shared<ScrollText>(display, WebUi::scrollText(), YPOS_CENTER, -10, Colors::RED, TINY_WIDE_FONT),
-                std::make_shared<SnowScape>(display, 50, 10),
-                std::make_shared<WeatherOverlay>(display, XPOS_RIGHT, 0, Colors::CYAN)
-            };
-
-        case SceneId::Aquatic:
-            return {
-                std::make_shared<ClearScreen>(display),
-                std::make_shared<ShowTime>(display, current_time, XPOS_CENTER, YPOS_CENTER, 0, 0, Colors::ORANGE, TINY_WIDE_FONT, true),
-                std::make_shared<BubblesInt>(display, 16)
-            };
-
-        case SceneId::FlamingHot:
-            return {
-                std::make_shared<ClearScreen>(display),
-                std::make_shared<Flames>(display, 5)
-            };
-
-        case SceneId::WaterEffect:
-            return {
-                std::make_shared<WaveSim>(display, 5, true)
-            };
-
-        case SceneId::BumpMapEffect:
-            return {
-                std::make_shared<BumpMap>(display, Colors::ORANGE, "OCCATION", false)
-            };
-
-        case SceneId::ValentinesDay:
-            return {
-                std::make_shared<ClearScreen>(display),
-                std::make_shared<Hearts>(display, 16),
-                std::make_shared<ShowTime>(display, current_time, XPOS_CENTER, YPOS_1_QUART, 0, 0, Colors::PURPLE, TINY_WIDE_FONT, true),
-                std::make_shared<ScrollText>(display, WebUi::scrollText(), YPOS_3_QUART, -10, Colors::RED, TINY_WIDE_FONT)
-            };
-
-            case SceneId::CubeEffect:
-            return {
-                std::make_shared<ClearScreen>(display),
-                std::make_shared<Stars>(display, 25),
-                std::make_shared<Cube3D>(display, 8.5f, false)
-            };
-
-        case SceneId::WebUiQr:
-        {
+        case SceneId::WebUiQr: {
             const String ip_str = WiFi.localIP().toString();
-            return {
-                std::make_shared<ClearScreen>(display),
-                std::make_shared<QrCode>(display, "https://" + ip_str + "/", 2, YPOS_CENTER),
-                std::make_shared<FlyingText>(display, "SCAN FOR WEB UI", 33, 8, 0, 0, Colors::CYAN, TINY_WIDE_FONT),
-                std::make_shared<FlyingText>(display, ip_str, 33, 18, 0, 0, Colors::WHITE, TINY_WIDE_FONT)
-            };
+            scene->add_effect<ClearScreen>();
+            scene->add_effect<QrCode>("https://" + ip_str + "/", 2, YPOS_CENTER);
+            scene->add_effect<FlyingText>("SCAN FOR WEB UI", 33, 8, 0, 0, Colors::CYAN, TINY_WIDE_FONT);
+            scene->add_effect<FlyingText>(ip_str, 33, 18, 0, 0, Colors::WHITE, TINY_WIDE_FONT);
+            break;
         }
 
+        case SceneId::FlamingHot:
+            scene->add_effect<ClearScreen>();
+            scene->add_effect<Flames>(5);
+            break;
+
+        case SceneId::WaterEffect:
+            scene->add_effect<WaveSim>(5, true);
+            break;
+
+        case SceneId::BumpMapEffect:
+            scene->add_effect<BumpMap>(
+                scene->color("Bump Color", Colors::ORANGE),
+                scene->text("Bump Text", "OCCATION"),
+                false);
+            break;
+
+        case SceneId::FullscreenTest:
+            scene->add_effect<FlyingPng>("/fullscreen/golfer.png", 0, 0, 0, 0, false, true);
+            break;
+
+        case SceneId::Test:
+            scene->add_effect<ClearScreen>();
+            scene->add_effect<Stars>();
+            scene->add_effect<FunkyLine>(0, 3, color565(255, 0, 0));
+            scene->add_effect<FunkyLine>(5, 3, color565(255, 100, 0));
+            scene->add_effect<FunkyLine>(10, 3, color565(255, 200, 100));
+            scene->add_effect<FunkyLine>(15, 3, color565(255, 255, 200));
+            scene->add_effect<FunkyLine>(20, 3, color565(255, 255, 255));
+            scene->add_effect<FlyingText>("*", 20, 10, -2, -1, Colors::RED);
+            scene->add_effect<FlyingText>("+", 100, 20, 1, -2, Colors::GREEN);
+            scene->add_effect<FlyingText>("o", 80, 24, 2, -2, Colors::CYAN);
+            scene->add_effect<ShowTime>(current_time, XPOS_CENTER, YPOS_CENTER, 0, 0, scene->color("Clock Color", Colors::BLUE), scene->font("Clock Font", NORMAL_FONT), true);
+            scene->add_effect<Circle>();
+            scene->add_effect<Circle>(80, 20, 12, Colors::BLUE);
+            scene->add_effect<ScrollText>(
+                "\x20\x21\x22\x23\x24\x25\x26\x27\x28\x29\x2A\x2B\x2C\x2D\x2E\x2F"
+                "\x30\x31\x32\x33\x34\x35\x36\x37\x38\x39\x3A\x3B\x3C\x3D\x3E\x3F"
+                "\x40\x41\x42\x43\x44\x45\x46\x47\x48\x49\x4A\x4B\x4C\x4D\x4E\x4F"
+                "\x50\x51\x52\x53\x54\x55\x56\x57\x58\x59\x5A\x5B\x5C\x5D\x5E\x5F"
+                "\x60\x61\x62\x63\x64\x65\x66\x67\x68\x69\x6A\x6B\x6C\x6D\x6E\x6F"
+                "\x70\x71\x72\x73\x74\x75\x76\x77\x78\x79\x7A\x7B\x7C\x7D\x7E\x7F"
+                "\x80\x81    ",
+                22, -5, scene->color("Scroll Color", Colors::RED), scene->font("Scroll Font", TINY_WIDE_FONT));
+            break;
+
+        case SceneId::NormalDays:
+            scene->add_effect<ClearScreen>();
+            scene->add_effect<ScrollText>(scene->text("Scroll Text", Config::DEFAULT_SCROLL), 26, -10, scene->color("Scroll Color", Colors::RED), scene->font("Scroll Font", TINY_WIDE_FONT));
+            scene->add_effect<ShowTime>(current_time, XPOS_CENTER, YPOS_CENTER, 0, 0, scene->color("Clock Color", Colors::BLUE), scene->font("Clock Font", NORMAL_FONT), true);
+            scene->add_effect<WeatherOverlay>(XPOS_CENTER, 0, scene->color("Weather Color", Colors::CYAN));
+            break;
+
+        case SceneId::JustSnow:
+            scene->add_effect<ClearScreen>();
+            scene->add_effect<ScrollText>(scene->text("Scroll Text", Config::DEFAULT_SCROLL), YPOS_CENTER, -10, scene->color("Scroll Color", Colors::RED), scene->font("Scroll Font", TINY_WIDE_FONT));
+            scene->add_effect<SnowScape>(static_cast<uint8_t>(scene->number("Snow Flakes", 50, 0, 200)), static_cast<int16_t>(scene->number("Snow Height", 10, 1, 31)));
+            scene->add_effect<WeatherOverlay>(XPOS_RIGHT, 0, scene->color("Weather Color", Colors::CYAN));
+            break;
+
+        case SceneId::Aquatic:
+            scene->add_effect<ClearScreen>();
+            scene->add_effect<ShowTime>(current_time, XPOS_CENTER, YPOS_CENTER, 0, 0, scene->color("Clock Color", Colors::ORANGE), scene->font("Clock Font", TINY_WIDE_FONT), true);
+            scene->add_effect<BubblesInt>(static_cast<uint8_t>(scene->number("Bubbles", 16, 1, 100)));
+            break;
+
+        case SceneId::ValentinesDay:
+            scene->add_effect<ClearScreen>();
+            scene->add_effect<Hearts>(static_cast<uint8_t>(scene->number("Hearts", 16, 1, 100)));
+            scene->add_effect<ShowTime>(current_time, XPOS_CENTER, YPOS_1_QUART, 0, 0, scene->color("Clock Color", Colors::PURPLE), scene->font("Clock Font", TINY_WIDE_FONT), true);
+            scene->add_effect<ScrollText>(scene->text("Scroll Text", Config::DEFAULT_SCROLL), YPOS_3_QUART, -10, scene->color("Scroll Color", Colors::RED), scene->font("Scroll Font", TINY_WIDE_FONT));
+            break;
+
+        case SceneId::CubeEffect:
+            scene->add_effect<ClearScreen>();
+            scene->add_effect<Stars>(25);
+            scene->add_effect<Cube3D>(8.5f, false);
+            break;
+
         case SceneId::ChristmasDays:
-            return {
-                std::make_shared<ClearScreen>(display),
-                std::make_shared<SnowScape>(display),
-                std::make_shared<ShowTime>(display, current_time, XPOS_CENTER, YPOS_CENTER, 0, 0, Colors::BLUE, NORMAL_FONT, true)};
+            scene->add_effect<ClearScreen>();
+            scene->add_effect<SnowScape>(static_cast<uint8_t>(scene->number("Snow Flakes", 20, 0, 200)), static_cast<int16_t>(scene->number("Snow Height", 8, 1, 31)));
+            scene->add_effect<ShowTime>(current_time, XPOS_CENTER, YPOS_CENTER, 0, 0, scene->color("Clock Color", Colors::BLUE), scene->font("Clock Font", NORMAL_FONT), true);
+            break;
 
         case SceneId::ChristmasEve:
-            return {
-                std::make_shared<ClearScreen>(display),
-                std::make_shared<Present>(display, -20, 5, 5, Colors::GREEN, Colors::RED),
-                std::make_shared<Present>(display, -10, 7, 3, Colors::CYAN, Colors::RED),
-                std::make_shared<Present>(display, -15, 7, 5, Colors::WHITE, Colors::YELLOW),
-                std::make_shared<Present>(display, -35, 11, 9, Colors::PURPLE, Colors::GREEN),
-                std::make_shared<SnowScape>(display),
-                std::make_shared<Hearts>(display, 8),
-                std::make_shared<FlyingText>(display, "Merry Christmas", 0, 0, 1, 1, Colors::RED)
-            };
+            scene->add_effect<ClearScreen>();
+            scene->add_effect<Present>(-20, 5, 5, Colors::GREEN, Colors::RED);
+            scene->add_effect<Present>(-10, 7, 3, Colors::CYAN, Colors::RED);
+            scene->add_effect<Present>(-15, 7, 5, Colors::WHITE, Colors::YELLOW);
+            scene->add_effect<Present>(-35, 11, 9, Colors::PURPLE, Colors::GREEN);
+            scene->add_effect<SnowScape>(static_cast<uint8_t>(scene->number("Snow Flakes", 20, 0, 200)), static_cast<int16_t>(scene->number("Snow Height", 8, 1, 31)));
+            scene->add_effect<Hearts>(8);
+            scene->add_effect<FlyingText>(scene->text("Message", "Merry Christmas"), 0, 0, 1, 1, scene->color("Message Color", Colors::RED), scene->font("Message Font", NORMAL_FONT));
+            break;
 
         case SceneId::JanuaryDays:
-            return {
-                std::make_shared<ClearScreen>(display),
-                std::make_shared<Stars>(display, 30),
-                std::make_shared<ShootingStar>(display, -1000),
-                std::make_shared<SnowScape>(display, 20, 4),
-                std::make_shared<ShowTime>(display, current_time, XPOS_CENTER, YPOS_CENTER, 0, 0, Colors::BLUE, NORMAL_FONT, true),
-                std::make_shared<ScrollText>(display, WebUi::scrollText(), 21, -10, Colors::RED, TINY_WIDE_FONT),
-                std::make_shared<FlyingPng>(display, "/bitmaps/ufo.png", XPOS_CENTER, YPOS_CENTER, 8, 0)};
+            scene->add_effect<ClearScreen>();
+            scene->add_effect<Stars>(30);
+            scene->add_effect<ShootingStar>(-1000);
+            scene->add_effect<SnowScape>(static_cast<uint8_t>(scene->number("Snow Flakes", 20, 0, 200)), static_cast<int16_t>(scene->number("Snow Height", 4, 1, 31)));
+            scene->add_effect<ShowTime>(current_time, XPOS_CENTER, YPOS_CENTER, 0, 0, scene->color("Clock Color", Colors::BLUE), scene->font("Clock Font", NORMAL_FONT), true);
+            scene->add_effect<ScrollText>(scene->text("Scroll Text", Config::DEFAULT_SCROLL), 21, -10, scene->color("Scroll Color", Colors::RED), scene->font("Scroll Font", TINY_WIDE_FONT));
+            scene->add_effect<FlyingPng>("/bitmaps/ufo.png", XPOS_CENTER, YPOS_CENTER, 8, 0);
+            break;
 
         case SceneId::Halloween:
-            return {
-                std::make_shared<ClearScreen>(display),
-                std::make_shared<ShowTime>(display, current_time, XPOS_CENTER, 27, 0, 0, Colors::RED, TINY_WIDE_FONT, true),
-                std::make_shared<ScrollText>(display, "!!!HAPPY HALLOWEEN!!! --- \x81\x81\x81 --- ", YPOS_CENTER, -10, Colors::ORANGE, TINY_WIDE_FONT),
-                std::make_shared<FlyingPng>(display, "/bitmaps/pumpkin.png", XPOS_CENTER, YPOS_CENTER, 16, 8),
-                std::make_shared<FlyingPng>(display, "/bitmaps/pumpkin.png", 100, YPOS_CENTER, -15, -7),
-                std::make_shared<FlyingPng>(display, "/bitmaps/ghost.png", XPOS_CENTER, YPOS_CENTER, 26, 1),
-                std::make_shared<Blood>(display)};
+            scene->add_effect<ClearScreen>();
+            scene->add_effect<ShowTime>(current_time, XPOS_CENTER, 27, 0, 0, scene->color("Clock Color", Colors::RED), scene->font("Clock Font", TINY_WIDE_FONT), true);
+            scene->add_effect<ScrollText>(scene->text("Scroll Text", "!!!HAPPY HALLOWEEN!!! --- \x81\x81\x81 --- "), YPOS_CENTER, -10, scene->color("Scroll Color", Colors::ORANGE), scene->font("Scroll Font", TINY_WIDE_FONT));
+            scene->add_effect<FlyingPng>("/bitmaps/pumpkin.png", XPOS_CENTER, YPOS_CENTER, 16, 8);
+            scene->add_effect<FlyingPng>("/bitmaps/pumpkin.png", 100, YPOS_CENTER, -15, -7);
+            scene->add_effect<FlyingPng>("/bitmaps/ghost.png", XPOS_CENTER, YPOS_CENTER, 26, 1);
+            scene->add_effect<Blood>();
+            break;
 
-        case SceneId::Birthday:
-        {
-            const int age = current_year - 2016;
-            return {
-                std::make_shared<ClearScreen>(display),
-                std::make_shared<SnowScape>(display),
-                std::make_shared<Present>(display, -20, 5, 5, Colors::GREEN, Colors::RED),
-                std::make_shared<Present>(display, -10, 7, 3, Colors::CYAN, Colors::RED),
-                std::make_shared<Present>(display, -15, 7, 5, Colors::WHITE, Colors::YELLOW),
-                std::make_shared<Present>(display, -35, 11, 9, Colors::PURPLE, Colors::GREEN),
-                std::make_shared<FlyingText>(display, "Happy birthday", 20, 10, -2, -1, Colors::RED),
-                std::make_shared<FlyingText>(display, "ERIK", 0, 0, 1, 1, Colors::BLUE),
-                std::make_shared<FlyingText>(display, String(age) + " \x86r", 64, 16, -1, 1, Colors::CYAN)
-            };
+        case SceneId::Birthday: {
+            const int age = current_year - scene->number("Birth Year", 2016, 1900, 2100);
+            scene->add_effect<ClearScreen>();
+            scene->add_effect<SnowScape>(static_cast<uint8_t>(scene->number("Snow Flakes", 20, 0, 200)), static_cast<int16_t>(scene->number("Snow Height", 8, 1, 31)));
+            scene->add_effect<Present>(-20, 5, 5, Colors::GREEN, Colors::RED);
+            scene->add_effect<Present>(-10, 7, 3, Colors::CYAN, Colors::RED);
+            scene->add_effect<Present>(-15, 7, 5, Colors::WHITE, Colors::YELLOW);
+            scene->add_effect<Present>(-35, 11, 9, Colors::PURPLE, Colors::GREEN);
+            scene->add_effect<FlyingText>(scene->text("Message", "Happy birthday"), 20, 10, -2, -1, scene->color("Message Color", Colors::RED), scene->font("Message Font", NORMAL_FONT));
+            scene->add_effect<FlyingText>(scene->text("Name", "ERIK"), 0, 0, 1, 1, scene->color("Name Color", Colors::BLUE), scene->font("Name Font", NORMAL_FONT));
+            scene->add_effect<FlyingText>(String(age) + " \x86r", 64, 16, -1, 1, scene->color("Age Color", Colors::CYAN), scene->font("Age Font", NORMAL_FONT));
+            break;
         }
 
         case SceneId::NewYearsDay:
-            return {
-                std::make_shared<ClearScreen>(display),
-                std::make_shared<Stars>(display),
-                std::make_shared<FireWorks>(display),
-                std::make_shared<FlyingText>(display, "Happy New Year", XPOS_CENTER, 5, 0, 0, Colors::BLUE),
-                std::make_shared<FlyingText>(display, String(current_year + 1), XPOS_CENTER, 13, 0, 0, Colors::WHITE),
-                std::make_shared<ShowTime>(display, current_time, XPOS_CENTER, 21, 0, 0, Colors::CYAN)
-            };
+            scene->add_effect<ClearScreen>();
+            scene->add_effect<Stars>();
+            scene->add_effect<FireWorks>();
+            scene->add_effect<FlyingText>(scene->text("Message", "Happy New Year"), XPOS_CENTER, 5, 0, 0, scene->color("Message Color", Colors::BLUE), scene->font("Message Font", NORMAL_FONT));
+            scene->add_effect<FlyingText>(String(current_year + 1), XPOS_CENTER, 13, 0, 0, scene->color("Year Color", Colors::WHITE), scene->font("Year Font", NORMAL_FONT));
+            scene->add_effect<ShowTime>(current_time, XPOS_CENTER, 21, 0, 0, scene->color("Clock Color", Colors::CYAN), scene->font("Clock Font", NORMAL_FONT));
+            break;
 
         case SceneId::NewYearsMidnight:
-            return {
-                std::make_shared<ClearScreen>(display),
-                std::make_shared<Stars>(display),
-                std::make_shared<FlyingPng>(display, "/bitmaps/champagne.png", XPOS_CENTER, YPOS_CENTER),
-                std::make_shared<FireWorks>(display, -200),
-                std::make_shared<FireWorks>(display, -200),
-                std::make_shared<FireWorks>(display, -200),
-                std::make_shared<FlyingText>(display, "Happy New Year", XPOS_CENTER, 12, 0, 0, Colors::BLUE)
-            };
+            scene->add_effect<ClearScreen>();
+            scene->add_effect<Stars>();
+            scene->add_effect<FlyingPng>("/bitmaps/champagne.png", XPOS_CENTER, YPOS_CENTER);
+            scene->add_effect<FireWorks>(-200);
+            scene->add_effect<FireWorks>(-200);
+            scene->add_effect<FireWorks>(-200);
+            scene->add_effect<FlyingText>(scene->text("Message", "Happy New Year"), XPOS_CENTER, 12, 0, 0, scene->color("Message Color", Colors::BLUE), scene->font("Message Font", NORMAL_FONT));
+            break;
 
         case SceneId::Test1:
-            return {
-                std::make_shared<ClearScreen>(display),
-                std::make_shared<Border>(display, 2, Colors::RED, Colors::YELLOW, BorderPattern::Solid),
-                std::make_shared<FlyingText>(display, "Test 1: Solid", XPOS_CENTER, YPOS_CENTER, 0, 0, Colors::WHITE, TINY_WIDE_FONT)
-            };
+            scene->add_effect<ClearScreen>();
+            scene->add_effect<Border>(2, scene->color("Border Color 1", Colors::RED), scene->color("Border Color 2", Colors::YELLOW), BorderPattern::Solid);
+            scene->add_effect<FlyingText>(scene->text("Label Text", "Test 1: Solid"), XPOS_CENTER, YPOS_CENTER, 0, 0, scene->color("Text Color", Colors::WHITE), scene->font("Text Font", TINY_WIDE_FONT));
+            break;
 
         case SceneId::Test2:
-            return {
-                std::make_shared<ClearScreen>(display),
-                std::make_shared<Border>(display, 2, Colors::RED, Colors::WHITE, BorderPattern::Dashed, 4, 2),
-                std::make_shared<FlyingText>(display, "Test 2: Dashed", XPOS_CENTER, YPOS_CENTER, 0, 0, Colors::WHITE, TINY_WIDE_FONT)
-            };
+            scene->add_effect<ClearScreen>();
+            scene->add_effect<Border>(2, scene->color("Border Color 1", Colors::RED), scene->color("Border Color 2", Colors::WHITE), BorderPattern::Dashed, 4, 2);
+            scene->add_effect<FlyingText>(scene->text("Label Text", "Test 2: Dashed"), XPOS_CENTER, YPOS_CENTER, 0, 0, scene->color("Text Color", Colors::WHITE), scene->font("Text Font", TINY_WIDE_FONT));
+            break;
 
         case SceneId::Test3:
-            return {
-                std::make_shared<ClearScreen>(display),
-                std::make_shared<Border>(display, 2, Colors::CYAN, Colors::BLUE, BorderPattern::Chase, 8, 3),
-                std::make_shared<FlyingText>(display, "Test 3: Chase", XPOS_CENTER, YPOS_CENTER, 0, 0, Colors::WHITE, TINY_WIDE_FONT)
-            };
+            scene->add_effect<ClearScreen>();
+            scene->add_effect<Border>(2, scene->color("Border Color 1", Colors::CYAN), scene->color("Border Color 2", Colors::BLUE), BorderPattern::Chase, 8, 3);
+            scene->add_effect<FlyingText>(scene->text("Label Text", "Test 3: Chase"), XPOS_CENTER, YPOS_CENTER, 0, 0, scene->color("Text Color", Colors::WHITE), scene->font("Text Font", TINY_WIDE_FONT));
+            break;
 
         case SceneId::Test4:
-            return {
-                std::make_shared<ClearScreen>(display),
-                std::make_shared<Border>(display, 2, Colors::YELLOW, Colors::PURPLE, BorderPattern::Twinkle, 3, 2),
-                std::make_shared<FlyingText>(display, "Test 4: Twinkle", XPOS_CENTER, YPOS_CENTER, 0, 0, Colors::WHITE, TINY_WIDE_FONT)
-            };
+            scene->add_effect<ClearScreen>();
+            scene->add_effect<Border>(2, scene->color("Border Color 1", Colors::YELLOW), scene->color("Border Color 2", Colors::PURPLE), BorderPattern::Twinkle, 3, 2);
+            scene->add_effect<FlyingText>(scene->text("Label Text", "Test 4: Twinkle"), XPOS_CENTER, YPOS_CENTER, 0, 0, scene->color("Text Color", Colors::WHITE), scene->font("Text Font", TINY_WIDE_FONT));
+            break;
 
         case SceneId::Test5:
-            return {
-                std::make_shared<ClearScreen>(display),
-                std::make_shared<Border>(display, 2, Colors::WHITE, Colors::BLACK, BorderPattern::Rainbow, 4, 3),
-                std::make_shared<FlyingText>(display, "Test 5: Rainbow", XPOS_CENTER, YPOS_CENTER, 0, 0, Colors::WHITE, TINY_WIDE_FONT)
-            };
+            scene->add_effect<ClearScreen>();
+            scene->add_effect<Border>(2, scene->color("Border Color 1", Colors::WHITE), scene->color("Border Color 2", Colors::BLACK), BorderPattern::Rainbow, 4, 3);
+            scene->add_effect<FlyingText>(scene->text("Label Text", "Test 5: Rainbow"), XPOS_CENTER, YPOS_CENTER, 0, 0, scene->color("Text Color", Colors::WHITE), scene->font("Text Font", TINY_WIDE_FONT));
+            break;
 
-        case SceneId::FullscreenTest:
-            return {
-                std::make_shared<FlyingPng>(display, "/fullscreen/golfer.png", 0, 0, 0, 0, false, true)
-            };
         case SceneId::None:
         default:
-            return {};
-        }
+            break;
+    }
+
+    return scene;
 }
 
 void renderScene(SceneId id)
 {
-    if (id != active_scene_id || WebUi::consumeSceneDirty()) {
-        active_scene.clear(); // Release existing scene's RAM before allocating the next
+    if (!active_scene || id != active_scene_id || WebUi::consumeSceneDirty()) {
+        active_scene.reset(); // Release existing scene's RAM before allocating the next
         active_scene    = createScene(id, *dma_display);
         active_scene_id = id;
+        SceneParams::publishActive(id, active_scene->params());
     }
-    active_scene.render();
+    active_scene->render();
 }
 
 SceneId selectDateScene(const tm& t)
