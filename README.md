@@ -1,6 +1,13 @@
 # OccationDisplay
 Scroller and occation animation display on multiple 64x32 led segment displays using ESP32-S3 SuperMini
 
+To upload use:
+    pio run -t upload
+
+To upload data files:
+    pio run -t uploadfs
+
+
 #TODO:
     1: On the webUi make it so when selecting a scene to show the user should be able to configure the parameters:
         Scroll text(s)
@@ -40,8 +47,3 @@ Scroller and occation animation display on multiple 64x32 led segment displays u
     10: Golf player on grass standing on right side and flag and hole on the right side (tracman logo scrolling in background and countdown to beta)
     11: Dirty rectangel updating...(Fullscreen update every frame max out cpu)
 
-To upload use:
-    pio run -t upload
-
-To upload data files:
-    pio run -t uploadfs

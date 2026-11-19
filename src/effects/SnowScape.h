@@ -21,8 +21,12 @@ public:
 	void render() override;
 
 private:
+	uint32_t nextRand();
+
 	std::vector<int16_t> m_ground;
 	std::vector<Flake>   m_flakes;
 	const uint16_t       myWHITE;
+	const uint16_t       myBLUE;
 	int16_t              m_snow_max_height;
+	uint32_t             m_rng;
 };
