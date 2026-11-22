@@ -33,7 +33,7 @@ enum class SceneId : uint8_t {
 	Test3,
 	Test4,
 	Test5,
-	FullscreenTest,
+	TrackmanTM5Beta,
 	None	// Must be last
 };
 

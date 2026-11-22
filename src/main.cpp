@@ -173,9 +173,11 @@ std::unique_ptr<Scene> createScene(SceneId id, MatrixPanel_I2S_DMA &display)
                 false);
             break;
 
-        case SceneId::FullscreenTest:
+        case SceneId::TrackmanTM5Beta:
             scene->add_effect<GolfHoleInOne>();
-            scene->add_effect<ShowTime>(current_time, XPOS_CENTER, YPOS_CENTER, 0, 0, scene->color("Clock Color", Colors::ORANGE), scene->font("Clock Font", NORMAL_FONT), "dd hh:mm:ss", "2026-12-01 00:00:00", "Beta release!!");
+//            scene->add_effect<FlyingText>(scene->text("Title", "Countdown to TM5 Beta"), XPOS_CENTER, YPOS_1_THIRD, 0, 0, scene->color("Title Color", Colors::BLUE), scene->font("Title Font", TINY_WIDE_FONT));
+            scene->add_effect<ShowTime>(current_time, XPOS_CENTER, YPOS_2_THIRD, 0, 0, scene->color("Clock Color", Colors::ORANGE), scene->font("Clock Font", NORMAL_FONT), "dd hh:mm:ss", "2026-12-01 00:00:00", "Beta release!!");
+            scene->add_effect<FlyingPng>("/bitmaps/trackman.png", 10, 4, 8, 4, true, false);
             break;
 
         case SceneId::Test:
@@ -344,7 +346,7 @@ std::unique_ptr<Scene> createScene(SceneId id, MatrixPanel_I2S_DMA &display)
         case SceneId::None:
         default:
             break;
-    }
+        }
 
     return scene;
 }

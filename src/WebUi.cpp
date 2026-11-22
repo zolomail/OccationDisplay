@@ -84,7 +84,7 @@ constexpr SceneOption SCENE_OPTIONS[] = {
     { SceneId::Test3,            "Test 3"           },
     { SceneId::Test4,            "Test 4"           },
     { SceneId::Test5,            "Test 5"           },
-    { SceneId::FullscreenTest,   "FullscreenTest"   }
+    { SceneId::TrackmanTM5Beta,  "TrackmanTM5Beta"  }
     
 };
 

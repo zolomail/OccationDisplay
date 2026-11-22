@@ -40,6 +40,5 @@ To upload data files:
     9: Allow setting outline color for for Hearts and Bubbles 
     10: Golf player on grass standing on right side and flag and hole on the right side (tracman logo scrolling in background and countdown to beta)
     11: Dirty rectangel updating...(Fullscreen update every frame max out cpu)
-    12: WebUi should get font list from enum in Effects.h
 
     14: Make wifi retry connect after fail every 30 secs if a valid ssid / pwd exists
