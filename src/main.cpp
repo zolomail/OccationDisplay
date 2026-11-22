@@ -68,6 +68,7 @@ namespace Config
     constexpr uint8_t  BRIGHTNESS      = 32;
     constexpr uint32_t FRAME_TIME_MS   = 40; // ~25 FPS
     constexpr uint32_t FRAME_BUDGET_US = FRAME_TIME_MS * 1000UL;
+    constexpr uint32_t WIFI_CONNECT_TIMEOUT_MS = 15000; // Fallback to SetupAp after 15s
 
     // POSIX timezone string for Central European Time with automatic DST
     constexpr char     TZ_INFO[]     = "CET-1CEST,M3.5.0,M10.5.0/3";
@@ -124,15 +125,18 @@ std::unique_ptr<Scene> createScene(SceneId id, MatrixPanel_I2S_DMA &display)
             scene->add_effect<FlyingText>("-OCCATION DISPLAY-", XPOS_CENTER, YPOS_CENTER, 0, 0, Colors::RED);
             break;
 
-        case SceneId::SetupAp:
+        case SceneId::SetupAp: {
+            const String wifi_qr = String("WIFI:T:WPA;S:") + WebUi::apSsid() + ";P:" + WebUi::apPassword() + ";;";
             scene->add_effect<ClearScreen>();
-            scene->add_effect<FlyingText>(String("SSID : ") + WebUi::apSsid(), 0, 7, 0, 0, Colors::WHITE);
-            scene->add_effect<FlyingText>(String("Pass : ") + WebUi::apPassword(), 0, 15, 0, 0, Colors::WHITE);
-            scene->add_effect<FlyingText>(String("IpAdr: ") + WiFi.localIP().toString(), 0, 23, 0, 0, Colors::WHITE);
+            scene->add_effect<QrCode>(wifi_qr, 1, YPOS_CENTER, Colors::BLACK, color565(255, 255, 255), 1);
             if (WebUi::wifiError().length() > 0) {
-                scene->add_effect<FlyingText>(WebUi::wifiError(), XPOS_CENTER, 0, 0, 0, Colors::RED, TINY_WIDE_FONT);
+                scene->add_effect<FlyingText>(WebUi::wifiError(), 35, 0, 0, 0, Colors::RED, TINY_WIDE_FONT);
             }
+            scene->add_effect<FlyingText>(String("SSID : ") + WebUi::apSsid(), 35, 8, 0, 0, Colors::WHITE, TINY_WIDE_FONT);
+            scene->add_effect<FlyingText>(String("Pass : ") + WebUi::apPassword(), 35, 16, 0, 0, Colors::WHITE, TINY_WIDE_FONT);
+            scene->add_effect<FlyingText>(String("IpAdr: ") + WiFi.softAPIP().toString(), 35, 24, 0, 0, Colors::CYAN, TINY_WIDE_FONT);
             break;
+        }
 
         case SceneId::WifiUnknown:
             scene->add_effect<ClearScreen>();
@@ -378,29 +382,55 @@ SceneId selectDateScene(const tm& t)
 
 SceneId checkWifiState()
 {
+    static uint32_t connect_start_ms = 0;
+
     switch (WiFi.status())
     {
-        case WL_CONNECTED:      return SceneId::None;
-        case WL_IDLE_STATUS:    return SceneId::Welcome;
+        case WL_CONNECTED:
+            connect_start_ms = 0;
+            return SceneId::None;
+
+        case WL_IDLE_STATUS:
+            if (connect_start_ms == 0) connect_start_ms = millis();
+            return SceneId::Welcome;
+
         case WL_NO_SSID_AVAIL:
+            connect_start_ms = 0;
             WebUi::startAccessPoint("Couldn't find SSID");
             active_scene_id = SceneId::None;
             return SceneId::SetupAp;
 
         case WL_CONNECT_FAILED:
+            connect_start_ms = 0;
             WebUi::startAccessPoint("Bad password!");
             active_scene_id = SceneId::None;
             return SceneId::SetupAp;
 
         case WL_CONNECTION_LOST:
+            connect_start_ms = 0;
             WebUi::startAccessPoint("Connection lost!");
             active_scene_id = SceneId::None;
             return SceneId::SetupAp;
 
-        case WL_DISCONNECTED:   return SceneId::Connecting;
+        case WL_DISCONNECTED:
+            if (connect_start_ms == 0) {
+                connect_start_ms = millis();
+            } else if (millis() - connect_start_ms >= Config::WIFI_CONNECT_TIMEOUT_MS) {
+                connect_start_ms = 0;
+                WebUi::startAccessPoint("Wi-Fi timeout");
+                active_scene_id = SceneId::None;
+                return SceneId::SetupAp;
+            }
+            return SceneId::Connecting;
+
         case WL_NO_SHIELD:
-        case WL_SCAN_COMPLETED: return SceneId::WifiUnknown;
-        case WL_STOPPED:        return SceneId::WifiStopped;
+        case WL_SCAN_COMPLETED:
+            connect_start_ms = 0;
+            return SceneId::WifiUnknown;
+
+        case WL_STOPPED:
+            connect_start_ms = 0;
+            return SceneId::WifiStopped;
     }
     return SceneId::None;
 }

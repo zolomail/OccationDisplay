@@ -1,6 +1,7 @@
 #include "WebUi.h"
 
 #include <WiFi.h>
+#include <DNSServer.h>
 #include <LittleFS.h>
 #include <Preferences.h>
 #include <esp_https_server.h>
@@ -12,7 +13,7 @@ namespace WebUi {
 
 namespace {
 
-constexpr char AP_SSID[]        = "ESP8285-Display";
+constexpr char AP_SSID[]        = "Occation-Display";
 constexpr char AP_PASSWORD[]    = "123456789";
 
 constexpr char DEFAULT_SSID[]   = "bandit";
@@ -42,6 +43,7 @@ constexpr char SERVER_KEY_PEM[] =
 
 httpd_handle_t http_server  = nullptr;
 httpd_handle_t https_server = nullptr;
+DNSServer      dns_server;
 Preferences    prefs;
 
 String wifi_ssid     = DEFAULT_SSID;
@@ -90,6 +92,7 @@ void connectStation()
 {
     is_ap   = false;
     show_ip = true;
+    dns_server.stop();
     WiFi.softAPdisconnect(true);
     WiFi.mode(WIFI_STA);
     WiFi.begin(wifi_ssid.c_str(), wifi_password.c_str());
@@ -506,6 +509,19 @@ esp_err_t handleWifiHttp(httpd_req_t* req)
     return ESP_OK;
 }
 
+esp_err_t handleNotFoundHttp(httpd_req_t* req, httpd_err_code_t err)
+{
+    if (is_ap) {
+        // Redirect captive portal checks (iOS/Android) to the Web UI root
+        httpd_resp_set_status(req, "302 Found");
+        httpd_resp_set_hdr(req, "Location", "http://192.168.4.1/");
+        httpd_resp_send(req, nullptr, 0);
+        return ESP_OK;
+    }
+    httpd_resp_send_err(req, HTTPD_404_NOT_FOUND, "Not Found");
+    return ESP_FAIL;
+}
+
 void registerRoutes(httpd_handle_t srv)
 {
     if (!srv) return;
@@ -525,6 +541,7 @@ void registerRoutes(httpd_handle_t srv)
     httpd_register_uri_handler(srv, &scene_cfg_get_uri);
     httpd_register_uri_handler(srv, &scene_cfg_post_uri);
     httpd_register_uri_handler(srv, &wifi_uri);
+    httpd_register_err_handler(srv, HTTPD_404_NOT_FOUND, handleNotFoundHttp);
 }
 
 } // namespace
@@ -556,8 +573,9 @@ void begin()
     https_cfg.port_secure      = 443;
     https_cfg.httpd.ctrl_port  = 32769;
     https_cfg.httpd.core_id    = 0;
-    https_cfg.httpd.max_open_sockets = 2;
+    https_cfg.httpd.max_open_sockets = 4;
     https_cfg.httpd.max_uri_handlers = 12;
+    https_cfg.httpd.lru_purge_enable = true;
     https_cfg.servercert       = reinterpret_cast<const uint8_t*>(SERVER_CERT_PEM);
     https_cfg.servercert_len   = sizeof(SERVER_CERT_PEM);
     https_cfg.prvtkey_pem      = reinterpret_cast<const uint8_t*>(SERVER_KEY_PEM);
@@ -570,16 +588,21 @@ void begin()
 
 void handleClient()
 {
-    // Both HTTP and HTTPS servers run asynchronously in background FreeRTOS tasks on Core 0
+    if (is_ap) {
+        dns_server.processNextRequest();
+    }
 }
 
 void startAccessPoint(const char* reason)
 {
     wifi_err = reason;
     Serial.printf("Starting AP (%s)\n", reason);
-    WiFi.disconnect();
+    WiFi.disconnect(false);
     WiFi.mode(WIFI_AP);
-    WiFi.softAP(AP_SSID, AP_PASSWORD, 1, false, 1);
+    const IPAddress ap_ip(192, 168, 4, 1);
+    WiFi.softAPConfig(ap_ip, ap_ip, IPAddress(255, 255, 255, 0));
+    WiFi.softAP(AP_SSID, AP_PASSWORD, 1, false, 4);
+    dns_server.start(53, "*", ap_ip);
     is_ap = true;
 }
 

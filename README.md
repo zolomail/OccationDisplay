@@ -16,6 +16,10 @@ To upload data files:
         input: scroll or bounce texts ("Merry Christmas", "Happy Newyear", )
                 Year of birth, for calculating age for birthdays
                 Colors / fonts
+    5:  Custom scenes where you can select one background effect (clearScreen, flames, wavesim, Bumpmap ) and up to 5 additional (other effects)
+    15: Daily/Weekly Reminders (weekend/bedtime)?
+    6: Show events from calendar (eg google calendar)
+
 
     3: More effects:
         Animated sprites (fish, birds)
@@ -31,14 +35,11 @@ To upload data files:
         Mortens Aften
         Wedding days
         Is it friday?
-        Daily/Weekly Reminder (weekend/bedtime)?
 
-    5: Custom scenes where you can select one background effect (clearScreen, flames, wavesim, Bumpmap ) and up to 5 additional (other effects)
-    6: Show events from calendar (eg google calendar)
-    8: When not being able to connect to WIfi show QR code for the WIFi API ESP32 provides..and the IP to connect to
+    8: When not being able to connect to WIfi show QR code for the WIFi AP ESP32 provides..and the IP to connect to
     9: Allow setting outline color for for Hearts and Bubbles 
     10: Golf player on grass standing on right side and flag and hole on the right side (tracman logo scrolling in background and countdown to beta)
     11: Dirty rectangel updating...(Fullscreen update every frame max out cpu)
     12: WebUi should get font list from enum in Effects.h
 
-    14: 
+    14: Make wifi retry connect after fail every 30 secs if a valid ssid / pwd exists
