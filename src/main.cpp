@@ -329,6 +329,7 @@ std::unique_ptr<Scene> createScene(SceneId id, MatrixPanel_I2S_DMA &display)
             scene->add_effect<FlyingPng>("/bitmaps/koi.png", XPOS_CENTER, YPOS_2_THIRD, 9, -3, true, false, true);
             scene->add_effect<FlyingPng>("/bitmaps/koi.png", XPOS_CENTER, YPOS_CENTER, 7, 1, true, false, true);
             scene->add_effect<FlyingPng>("/bitmaps/koi.png", XPOS_1_QUART, YPOS_1_THIRD, 8, 2, true, false, true);
+            scene->add_effect<BubblesInt>(static_cast<uint8_t>(scene->number("Bubbles", 8, 1, 50)));
             break;
 
         case SceneId::Test4:
@@ -587,6 +588,31 @@ void drawCpuLoadBar(uint32_t render_us)
     }
 }
 
+void drawMemBar()
+{
+    if (!dma_display) return;
+
+    const int16_t x        = dma_display->width() - 2;
+    const int16_t screen_h = dma_display->height();
+
+    const uint32_t total_heap = ESP.getHeapSize();
+    const uint32_t free_heap  = ESP.getFreeHeap();
+    const uint32_t used_heap  = (total_heap > free_heap) ? (total_heap - free_heap) : 0;
+    const float    mem_ratio  = (total_heap > 0)
+        ? (static_cast<float>(used_heap) / static_cast<float>(total_heap))
+        : 0.0f;
+
+    int16_t bar_h = static_cast<int16_t>(lroundf(mem_ratio * screen_h));
+    bar_h         = constrain(bar_h, static_cast<int16_t>(0), screen_h);
+
+    if (bar_h < screen_h) {
+        dma_display->drawFastVLine(x, 0, screen_h - bar_h, Colors::BLACK);
+    }
+    if (bar_h > 0) {
+        dma_display->drawFastVLine(x, screen_h - bar_h, bar_h, Colors::BLUE);
+    }
+}
+
 // =========================================================================
 // Main Loop (~25 FPS)
 // =========================================================================
@@ -624,8 +650,10 @@ void loop()
     prev_show_cpu = show_cpu;
 
     if (show_cpu) {
+        drawMemBar();
         drawCpuLoadBar(micros() - frame_start_us);
     } else if (clear_cpu_frames > 0) {
+        dma_display->drawFastVLine(dma_display->width() - 2, 0, dma_display->height(), Colors::BLACK);
         dma_display->drawFastVLine(dma_display->width() - 1, 0, dma_display->height(), Colors::BLACK);
         --clear_cpu_frames;
     }
