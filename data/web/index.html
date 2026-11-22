@@ -64,10 +64,17 @@
           <span>Show MEM &amp; CPU bars</span>
           <input type="checkbox" id="show_cpu" {{SHOW_CPU_CHECKED}}>
         </label>
-        <label class="toggle-row toggle-row-last">
+        <label class="toggle-row">
           <span>Show IP Address on Display</span>
           <input type="checkbox" id="show_ip" {{SHOW_IP_CHECKED}}>
         </label>
+        <div class="field" style="margin-top:12px;">
+          <label for="panel_chain">Connected Panels (Reset to apply)</label>
+          <select id="panel_chain">{{PANEL_CHAIN_OPTIONS}}</select>
+        </div>
+        <div class="actions">
+          <button type="button" id="btn-reboot" class="btn btn-secondary">Reset Display</button>
+        </div>
       </div>
     </details>
   </main>

@@ -9,11 +9,12 @@ void begin();
 void handleClient();
 void startAccessPoint(const char* reason);
 
-bool    isApMode();
-SceneId selectedScene();
-bool    showIp();
-bool    showCpuLoad();
-bool    consumeSceneDirty();
+bool     isApMode();
+SceneId  selectedScene();
+bool     showIp();
+bool     showCpuLoad();
+uint16_t panelChain();
+bool     consumeSceneDirty();
 
 const String& wifiError();
 const char*   apSsid();

@@ -50,11 +50,14 @@ String wifi_ssid     = DEFAULT_SSID;
 String wifi_password = DEFAULT_PASS;
 String wifi_err      = "";
 
-bool    is_ap          = false;
-bool    show_ip        = true;
-bool    show_cpu       = true;
-bool    scene_dirty    = false;
-SceneId selected_scene = SceneId::None;
+bool     is_ap            = false;
+bool     show_ip          = true;
+bool     show_cpu         = true;
+bool     scene_dirty      = false;
+bool     reboot_pending   = false;
+uint16_t panel_chain      = 3;
+bool     prefs_loaded     = false;
+SceneId  selected_scene   = SceneId::None;
 
 struct SceneOption {
     SceneId     id;
@@ -297,13 +300,23 @@ esp_err_t handleRootHttp(httpd_req_t* req)
         options_html += ">" + String(opt.label) + "</option>";
     }
 
+    String panel_chain_html;
+    for (uint16_t p = 1; p <= 4; ++p) {
+        panel_chain_html += "<option value=\"" + String(p) + "\"";
+        if (p == panel_chain) {
+            panel_chain_html += " selected";
+        }
+        panel_chain_html += ">" + String(p) + (p == 1 ? " Panel" : " Panels") + "</option>";
+    }
+
     const String html = renderTemplate("/web/index.html", {
-        { "WIFI_ERROR_BLOCK", wifi_err_block },
-        { "WEATHER_TEXT",     weather_text },
-        { "SCENE_OPTIONS",    options_html },
-        { "SHOW_CPU_CHECKED", show_cpu ? "checked" : "" },
-        { "SHOW_IP_CHECKED",  show_ip ? "checked" : "" },
-        { "WIFI_SSID",        htmlEscape(wifi_ssid) }
+        { "WIFI_ERROR_BLOCK",    wifi_err_block },
+        { "WEATHER_TEXT",        weather_text },
+        { "SCENE_OPTIONS",       options_html },
+        { "SHOW_CPU_CHECKED",    show_cpu ? "checked" : "" },
+        { "SHOW_IP_CHECKED",     show_ip ? "checked" : "" },
+        { "PANEL_CHAIN_OPTIONS", panel_chain_html },
+        { "WIFI_SSID",           htmlEscape(wifi_ssid) }
     });
 
     httpd_resp_set_type(req, "text/html");
@@ -335,7 +348,27 @@ esp_err_t handleOptionsHttp(httpd_req_t* req)
             scene_dirty = true;
         }
     }
+    if (getFormArg(body, "panel_chain", val)) {
+        const int n = val.toInt();
+        if (n >= 1 && n <= 4) {
+            const uint16_t next = static_cast<uint16_t>(n);
+            if (next != panel_chain) {
+                panel_chain = next;
+                prefs.begin(PREFS_NS, false);
+                prefs.putUShort("panel_chain", panel_chain);
+                prefs.end();
+            }
+        }
+    }
 
+    httpd_resp_set_type(req, "text/plain");
+    return httpd_resp_send(req, "OK", 2);
+}
+
+// POST /reboot
+esp_err_t handleRebootHttp(httpd_req_t* req)
+{
+    reboot_pending = true;
     httpd_resp_set_type(req, "text/plain");
     return httpd_resp_send(req, "OK", 2);
 }
@@ -533,6 +566,7 @@ void registerRoutes(httpd_handle_t srv)
     const httpd_uri_t scene_cfg_get_uri    = { "/scene_config", HTTP_GET,  handleSceneConfigGetHttp,  nullptr };
     const httpd_uri_t scene_cfg_post_uri   = { "/scene_config", HTTP_POST, handleSceneConfigPostHttp, nullptr };
     const httpd_uri_t wifi_uri             = { "/wifi",         HTTP_POST, handleWifiHttp,            nullptr };
+    const httpd_uri_t reboot_uri           = { "/reboot",       HTTP_POST, handleRebootHttp,          nullptr };
 
     httpd_register_uri_handler(srv, &root_uri);
     httpd_register_uri_handler(srv, &style_uri);
@@ -541,18 +575,28 @@ void registerRoutes(httpd_handle_t srv)
     httpd_register_uri_handler(srv, &scene_cfg_get_uri);
     httpd_register_uri_handler(srv, &scene_cfg_post_uri);
     httpd_register_uri_handler(srv, &wifi_uri);
+    httpd_register_uri_handler(srv, &reboot_uri);
     httpd_register_err_handler(srv, HTTPD_404_NOT_FOUND, handleNotFoundHttp);
 }
 
 } // namespace
 
-void begin()
+void loadPrefsOnce()
 {
-    // Load persisted settings from NVS flash (survives reflashing)
+    if (prefs_loaded) return;
     prefs.begin(PREFS_NS, true);
     wifi_ssid     = prefs.getString("ssid", DEFAULT_SSID);
     wifi_password = prefs.getString("pass", DEFAULT_PASS);
+    const uint16_t saved_chain = prefs.getUShort("panel_chain", 3);
+    panel_chain   = (saved_chain >= 1 && saved_chain <= 4) ? saved_chain : 3;
     prefs.end();
+    prefs_loaded = true;
+}
+
+void begin()
+{
+    // Load persisted settings from NVS flash (survives reflashing)
+    loadPrefsOnce();
 
     connectStation();
 
@@ -588,6 +632,10 @@ void begin()
 
 void handleClient()
 {
+    if (reboot_pending) {
+        delay(150);
+        ESP.restart();
+    }
     if (is_ap) {
         dns_server.processNextRequest();
     }
@@ -610,6 +658,7 @@ bool isApMode()            { return is_ap; }
 SceneId selectedScene()    { return selected_scene; }
 bool showIp()              { return show_ip; }
 bool showCpuLoad()         { return show_cpu; }
+uint16_t panelChain()      { loadPrefsOnce(); return panel_chain; }
 bool consumeSceneDirty()   { const bool d = scene_dirty; scene_dirty = false; return d; }
 const String& wifiError()  { return wifi_err; }
 const char* apSsid()       { return AP_SSID; }

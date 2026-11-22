@@ -470,7 +470,7 @@ void setup()
     HUB75_I2S_CFG mxconfig(
         Config::PANEL_RES_X,
         Config::PANEL_RES_Y,
-        Config::PANEL_CHAIN
+        WebUi::panelChain()
     );
 
     mxconfig.gpio.r1  = Config::PIN_R1;

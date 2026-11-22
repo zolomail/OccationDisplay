@@ -109,7 +109,8 @@ function loadSceneConfig() {
 function updateOptions() {
   const params = 'scene_id=' + encodeURIComponent(document.getElementById('scene_id').value) +
                  '&show_ip=' + (document.getElementById('show_ip').checked ? '1' : '0') +
-                 '&show_cpu=' + (document.getElementById('show_cpu').checked ? '1' : '0');
+                 '&show_cpu=' + (document.getElementById('show_cpu').checked ? '1' : '0') +
+                 '&panel_chain=' + encodeURIComponent(document.getElementById('panel_chain').value);
   return fetch('/options', {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -127,6 +128,17 @@ document.getElementById('show_cpu').addEventListener('change', () => {
 
 document.getElementById('show_ip').addEventListener('change', () => {
   updateOptions().then(() => showToast('Display updated'));
+});
+
+document.getElementById('panel_chain').addEventListener('change', () => {
+  updateOptions().then(() => showToast('Saved (reset to apply)'));
+});
+
+document.getElementById('btn-reboot').addEventListener('click', () => {
+  showToast('Resetting...');
+  fetch('/reboot', { method: 'POST' }).then(() => {
+    setTimeout(() => location.reload(), 3000);
+  });
 });
 
 const aboutModal = document.getElementById('about-modal');
