@@ -40,3 +40,5 @@ To upload data files:
     11: Dirty rectangel updating...(Fullscreen update every frame max out cpu)
 
     14: Make wifi retry connect after fail every 30 secs if a valid ssid / pwd exists
+    15: Add configuration for all of the effects 
+    16: Add a memory bar right next to the cpu bar add a bar that shows memory used vs total

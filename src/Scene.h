@@ -30,7 +30,7 @@ enum class SceneId : uint8_t {
 	WebUiQr,
 	BorderTest,
 	ScrollerTest,
-	Test3,
+	TestAnimatedPng,
 	Test4,
 	Test5,
 	TrackmanTM5Beta,

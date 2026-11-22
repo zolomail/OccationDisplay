@@ -324,10 +324,11 @@ std::unique_ptr<Scene> createScene(SceneId id, MatrixPanel_I2S_DMA &display)
             scene->add_effect<ScrollText>(scene->text("Scroll Text", Config::DEFAULT_SCROLL), YPOS_CENTER, -10, scene->color("Scroll Color", Colors::RED), scene->font("Scroll Font", TINY_WIDE_FONT));
             break;
 
-        case SceneId::Test3:
-            scene->add_effect<ClearScreen>();
-            scene->add_effect<Border>(2, scene->color("Border Color 1", Colors::CYAN), scene->color("Border Color 2", Colors::BLUE), BorderPattern::Chase, 8, 3);
-            scene->add_effect<FlyingText>(scene->text("Label Text", "Test 3: Chase"), XPOS_CENTER, YPOS_CENTER, 0, 0, scene->color("Text Color", Colors::WHITE), scene->font("Text Font", TINY_WIDE_FONT));
+        case SceneId::TestAnimatedPng:
+            scene->add_effect<ClearScreen>(0, 14, 28);
+            scene->add_effect<FlyingPng>("/bitmaps/koi.png", XPOS_CENTER, YPOS_2_THIRD, 9, -3, true, false, true);
+            scene->add_effect<FlyingPng>("/bitmaps/koi.png", XPOS_CENTER, YPOS_CENTER, 7, 1, true, false, true);
+            scene->add_effect<FlyingPng>("/bitmaps/koi.png", XPOS_1_QUART, YPOS_1_THIRD, 8, 2, true, false, true);
             break;
 
         case SceneId::Test4:
