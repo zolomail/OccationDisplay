@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <title>Occasion Display</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <main class="container">
+    <header class="header">
+      <div>
+        <h1>Occasion Display</h1>
+        <p class="subtitle">{{WEATHER_TEXT}}</p>
+      </div>
+    </header>
+
+    {{WIFI_ERROR_BLOCK}}
+
+    <section class="card">
+      <h2>Scene</h2>
+      <div class="field">
+        <label for="scene_id">Active Scene</label>
+        <select id="scene_id">{{SCENE_OPTIONS}}</select>
+      </div>
+      <div id="scene-cfg" class="scene-cfg"></div>
+    </section>
+
+    <section class="card">
+      <h2>Wi-Fi Settings</h2>
+      <label class="toggle-row">
+        <span>Show IP Address on Display</span>
+        <input type="checkbox" id="show_ip" {{SHOW_IP_CHECKED}}>
+      </label>
+      <form method="POST" action="/wifi" class="wifi-form">
+        <div class="field">
+          <label for="ssid">SSID</label>
+          <input id="ssid" name="ssid" value="{{WIFI_SSID}}" autocomplete="username" required>
+        </div>
+        <div class="field">
+          <label for="pass">Password</label>
+          <input id="pass" name="pass" type="password" placeholder="Leave blank to keep current" autocomplete="current-password">
+        </div>
+        <div class="actions">
+          <button type="submit" class="btn btn-primary">Save &amp; Connect</button>
+        </div>
+      </form>
+    </section>
+  </main>
+
+  <div id="toast" class="toast" aria-live="polite"></div>
+  <script src="/app.js"></script>
+</body>
+</html>

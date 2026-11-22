@@ -1,8 +1,11 @@
 #include "WebUi.h"
 
 #include <WiFi.h>
+#include <LittleFS.h>
 #include <Preferences.h>
 #include <esp_https_server.h>
+#include <utility>
+#include <vector>
 #include "Weather.h"
 
 namespace WebUi {
@@ -163,140 +166,140 @@ String readRequestBody(httpd_req_t* req)
     return buf;
 }
 
+String htmlEscape(const String& s)
+{
+    String out;
+    out.reserve(s.length() + 8);
+    for (size_t i = 0; i < s.length(); ++i) {
+        const char c = s[i];
+        if (c == '&')      out += "&amp;";
+        else if (c == '<') out += "&lt;";
+        else if (c == '>') out += "&gt;";
+        else if (c == '"') out += "&quot;";
+        else               out += c;
+    }
+    return out;
+}
+
+bool readFsFile(const char* path, String& out)
+{
+    File f = LittleFS.open(path, "r");
+    if (!f || f.isDirectory()) {
+        return false;
+    }
+    const size_t sz = f.size();
+    out = "";
+    out.reserve(sz + 1);
+    char buf[256];
+    while (f.available()) {
+        const int n = f.readBytes(buf, sizeof(buf) - 1);
+        if (n <= 0) break;
+        buf[n] = '\0';
+        out += buf;
+    }
+    f.close();
+    return true;
+}
+
+String renderTemplate(const char* path, const std::vector<std::pair<String, String>>& vars)
+{
+    String tpl;
+    if (!readFsFile(path, tpl)) {
+        return String("Missing template on LittleFS: ") + path + " (run pio run -t uploadfs)";
+    }
+
+    String out;
+    out.reserve(tpl.length() + 512);
+    int pos = 0;
+    while (pos < static_cast<int>(tpl.length())) {
+        const int open = tpl.indexOf("{{", pos);
+        if (open < 0) {
+            out += tpl.substring(pos);
+            break;
+        }
+        out += tpl.substring(pos, open);
+        const int close = tpl.indexOf("}}", open + 2);
+        if (close < 0) {
+            out += tpl.substring(open);
+            break;
+        }
+        const String key = tpl.substring(open + 2, close);
+        bool replaced = false;
+        for (const auto& kv : vars) {
+            if (kv.first == key) {
+                out += kv.second;
+                replaced = true;
+                break;
+            }
+        }
+        if (!replaced) {
+            out += tpl.substring(open, close + 2);
+        }
+        pos = close + 2;
+    }
+    return out;
+}
+
+esp_err_t serveStaticFile(httpd_req_t* req, const char* path, const char* content_type)
+{
+    String content;
+    if (!readFsFile(path, content)) {
+        httpd_resp_send_err(req, HTTPD_404_NOT_FOUND, "File not found");
+        return ESP_FAIL;
+    }
+    httpd_resp_set_type(req, content_type);
+    httpd_resp_set_hdr(req, "Cache-Control", "public, max-age=3600");
+    return httpd_resp_send(req, content.c_str(), content.length());
+}
+
+// GET /style.css
+esp_err_t handleStyleCssHttp(httpd_req_t* req)
+{
+    return serveStaticFile(req, "/web/style.css", "text/css");
+}
+
+// GET /app.js
+esp_err_t handleAppJsHttp(httpd_req_t* req)
+{
+    return serveStaticFile(req, "/web/app.js", "application/javascript");
+}
+
 // GET /
 esp_err_t handleRootHttp(httpd_req_t* req)
 {
-    String html = R"raw(<!DOCTYPE html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><title>Occasion Display</title></head><body>)raw";
+    String wifi_err_block;
     if (wifi_err.length() > 0) {
-        html += "<p style='color:red;'><b>Last Wi-Fi error:</b> " + wifi_err + "</p>";
+        wifi_err_block = "<div class='alert'><b>Last Wi-Fi error:</b> " + htmlEscape(wifi_err) + "</div>";
     }
+
+    String weather_text;
     if (Weather::isValid()) {
-        html += "<p><b>Current Weather (" + Weather::city() + "):</b> " +
-                String(Weather::conditionName()) + " (" + String(Weather::temperature(), 1) + " &deg;C, " +
-                String(Weather::isDay() ? "Day" : "Night") + " &mdash; Moon: " +
-                String(Weather::moonPhaseName()) + ")</p>";
+        weather_text = Weather::city() + " &middot; " +
+                       String(Weather::conditionName()) + " (" +
+                       String(Weather::temperature(), 1) + " &deg;C, " +
+                       String(Weather::isDay() ? "Day" : "Night") + " &middot; " +
+                       String(Weather::moonPhaseName()) + ")";
     } else {
-        html += "<p><b>Current Weather:</b> Fetching...</p>";
+        weather_text = "Weather: Fetching...";
     }
-    html += R"raw(
-    <h2>Display Options:</h2>
-    <label for="scene_id">Scene: </label>
-    <select id="scene_id">)raw";
 
+    String options_html;
+    options_html.reserve(1024);
     for (const auto& opt : SCENE_OPTIONS) {
-        html += "<option value=\"" + String(static_cast<uint8_t>(opt.id)) + "\"";
+        options_html += "<option value=\"" + String(static_cast<uint8_t>(opt.id)) + "\"";
         if (opt.id == selected_scene) {
-            html += " selected";
+            options_html += " selected";
         }
-        html += ">" + String(opt.label) + "</option>";
+        options_html += ">" + String(opt.label) + "</option>";
     }
 
-    html += R"raw(</select>
-    <div id="scene-cfg" style="margin-top:14px;padding:10px;border:1px solid #ccc;max-width:420px;"></div>
-    <hr>
-    <h2>Wi-Fi Settings:</h2>
-    <label><input type="checkbox" id="show_ip" )raw" + String(show_ip ? "checked" : "") + R"raw(> Show IP Address</label><br><br>
-    <form method="POST" action="/wifi">
-    SSID: <input name="ssid" value=")raw" + wifi_ssid + R"raw("><br><br>
-    Password: <input name="pass" type="password" placeholder="Leave blank to keep current"><br><br>
-    <button type="submit">Save &amp; Connect</button>
-    </form>
-    <script>
-    const FONTS = [
-      [0, 'Normal (5x7)'],
-      [1, 'Tiny Wide (6x5)'],
-      [2, 'Small Wide (6x8)'],
-      [3, 'Org 01 (5x5)'],
-      [4, 'Tom Thumb (3x5)'],
-      [5, 'Picopixel (3x5)']
-    ];
-
-    function escHtml(s) {
-      return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-    }
-
-    function fontSelect(id, val) {
-      let h = '<select data-k="' + id + '">';
-      for (const [fId, fName] of FONTS) {
-        h += '<option value="' + fId + '"' + (Number(val) === fId ? ' selected' : '') + '>' + fName + '</option>';
-      }
-      return h + '</select>';
-    }
-
-    function row(label, html) {
-      return '<div style="margin:6px 0;display:flex;align-items:center;gap:8px;"><label style="min-width:120px;">' + escHtml(label) + '</label>' + html + '</div>';
-    }
-
-    function saveSceneConfig(reset) {
-      const sid = document.getElementById('scene_id').value;
-      const parts = ['scene_id=' + encodeURIComponent(sid)];
-      if (reset) {
-        parts.push('reset=1');
-      } else {
-        document.querySelectorAll('#scene-cfg [data-k]').forEach(el => {
-          parts.push(encodeURIComponent(el.dataset.k) + '=' + encodeURIComponent(el.value));
-        });
-      }
-      fetch('/scene_config', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-        body: parts.join('&')
-      }).then(() => { if (reset) loadSceneConfig(); });
-    }
-
-    function loadSceneConfig() {
-      const sid = document.getElementById('scene_id').value;
-      const box = document.getElementById('scene-cfg');
-      fetch('/scene_config?scene_id=' + encodeURIComponent(sid))
-        .then(r => r.json())
-        .then(d => {
-          if (d.is_auto) {
-            box.innerHTML = '<i>Auto-selected by date. Pick a specific scene above to customize it.</i>';
-            return;
-          }
-          const params = d.params || [];
-          if (!params.length) {
-            box.innerHTML = '<i>No editable parameters for this scene.</i>';
-            return;
-          }
-          let h = '<h3 style="margin:0 0 8px 0;">Scene Settings</h3>';
-          for (const p of params) {
-            if (p.t === 'text') {
-              h += row(p.l, '<input data-k="' + escHtml(p.k) + '" style="flex:1" value="' + escHtml(p.v) + '">');
-            } else if (p.t === 'color') {
-              h += row(p.l, '<input type="color" data-k="' + escHtml(p.k) + '" value="' + escHtml(p.v) + '">');
-            } else if (p.t === 'font') {
-              h += row(p.l, fontSelect(escHtml(p.k), p.v));
-            } else if (p.t === 'number') {
-              h += row(p.l, '<input type="number" data-k="' + escHtml(p.k) + '" min="' + p.min + '" max="' + p.max + '" value="' + escHtml(p.v) + '">');
-            }
-          }
-          h += '<div style="margin-top:10px;display:flex;gap:8px;">' +
-               '<button type="button" id="btn-apply">Apply</button>' +
-               '<button type="button" id="btn-reset">Reset Defaults</button></div>';
-          box.innerHTML = h;
-          box.querySelectorAll('[data-k]').forEach(el => el.addEventListener('change', () => saveSceneConfig(false)));
-          document.getElementById('btn-apply').addEventListener('click', () => saveSceneConfig(false));
-          document.getElementById('btn-reset').addEventListener('click', () => saveSceneConfig(true));
-        });
-    }
-
-    function updateOptions() {
-    var params = 'scene_id=' + encodeURIComponent(document.getElementById('scene_id').value) +
-                '&show_ip=' + (document.getElementById('show_ip').checked ? '1' : '0');
-    return fetch('/options', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-        body: params
+    const String html = renderTemplate("/web/index.html", {
+        { "WIFI_ERROR_BLOCK", wifi_err_block },
+        { "WEATHER_TEXT",     weather_text },
+        { "SCENE_OPTIONS",    options_html },
+        { "SHOW_IP_CHECKED",  show_ip ? "checked" : "" },
+        { "WIFI_SSID",        htmlEscape(wifi_ssid) }
     });
-    }
-    document.getElementById('scene_id').addEventListener('change', function() {
-      updateOptions().then(() => loadSceneConfig());
-    });
-    document.getElementById('show_ip').addEventListener('change', updateOptions);
-    loadSceneConfig();
-    </script>
-    </body></html>)raw";
 
     httpd_resp_set_type(req, "text/html");
     return httpd_resp_send(req, html.c_str(), html.length());
@@ -470,9 +473,9 @@ esp_err_t handleWifiHttp(httpd_req_t* req)
     prefs.end();
 
     wifi_err = "";
-    const String resp =
-        "<!DOCTYPE html><html><body><p>Saved! Connecting to <b>" + wifi_ssid +
-        "</b>...</p><p><a href='/'>Back</a></p></body></html>";
+    const String resp = renderTemplate("/web/wifi_saved.html", {
+        { "WIFI_SSID", htmlEscape(wifi_ssid) }
+    });
 
     httpd_resp_set_type(req, "text/html");
     httpd_resp_send(req, resp.c_str(), resp.length());
@@ -487,12 +490,16 @@ void registerRoutes(httpd_handle_t srv)
     if (!srv) return;
 
     const httpd_uri_t root_uri             = { "/",             HTTP_GET,  handleRootHttp,            nullptr };
+    const httpd_uri_t style_uri            = { "/style.css",    HTTP_GET,  handleStyleCssHttp,        nullptr };
+    const httpd_uri_t appjs_uri            = { "/app.js",       HTTP_GET,  handleAppJsHttp,           nullptr };
     const httpd_uri_t options_uri          = { "/options",      HTTP_POST, handleOptionsHttp,         nullptr };
     const httpd_uri_t scene_cfg_get_uri    = { "/scene_config", HTTP_GET,  handleSceneConfigGetHttp,  nullptr };
     const httpd_uri_t scene_cfg_post_uri   = { "/scene_config", HTTP_POST, handleSceneConfigPostHttp, nullptr };
     const httpd_uri_t wifi_uri             = { "/wifi",         HTTP_POST, handleWifiHttp,            nullptr };
 
     httpd_register_uri_handler(srv, &root_uri);
+    httpd_register_uri_handler(srv, &style_uri);
+    httpd_register_uri_handler(srv, &appjs_uri);
     httpd_register_uri_handler(srv, &options_uri);
     httpd_register_uri_handler(srv, &scene_cfg_get_uri);
     httpd_register_uri_handler(srv, &scene_cfg_post_uri);
@@ -516,6 +523,7 @@ void begin()
     http_cfg.server_port      = 80;
     http_cfg.ctrl_port        = 32768;
     http_cfg.core_id          = 0;
+    http_cfg.max_uri_handlers = 12;
     http_cfg.lru_purge_enable = true;
     if (httpd_start(&http_server, &http_cfg) == ESP_OK) {
         registerRoutes(http_server);
@@ -528,6 +536,7 @@ void begin()
     https_cfg.httpd.ctrl_port  = 32769;
     https_cfg.httpd.core_id    = 0;
     https_cfg.httpd.max_open_sockets = 2;
+    https_cfg.httpd.max_uri_handlers = 12;
     https_cfg.servercert       = reinterpret_cast<const uint8_t*>(SERVER_CERT_PEM);
     https_cfg.servercert_len   = sizeof(SERVER_CERT_PEM);
     https_cfg.prvtkey_pem      = reinterpret_cast<const uint8_t*>(SERVER_KEY_PEM);
