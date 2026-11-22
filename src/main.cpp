@@ -208,7 +208,7 @@ std::unique_ptr<Scene> createScene(SceneId id, MatrixPanel_I2S_DMA &display)
 
         case SceneId::NormalDays:
             scene->add_effect<ClearScreen>();
-            scene->add_effect<ScrollText>(scene->text("Scroll Text", Config::DEFAULT_SCROLL), 26, -10, scene->color("Scroll Color", Colors::RED), scene->font("Scroll Font", TINY_WIDE_FONT));
+            scene->add_effect<ScrollText>(scene->text("Scroll Text", Config::DEFAULT_SCROLL), YPOS_BOTTOM, -10, scene->color("Scroll Color", Colors::RED), scene->font("Scroll Font", TINY_WIDE_FONT));
             scene->add_effect<ShowTime>(current_time, XPOS_CENTER, YPOS_CENTER, 0, 0, scene->color("Clock Color", Colors::BLUE), scene->font("Clock Font", NORMAL_FONT), "yyyy-mm-dd hh:mm:ss");
             scene->add_effect<WeatherOverlay>(XPOS_CENTER, 0, scene->color("Weather Color", Colors::CYAN));
             break;
@@ -347,9 +347,9 @@ std::unique_ptr<Scene> createScene(SceneId id, MatrixPanel_I2S_DMA &display)
             const float outline = static_cast<float>(scene->number("Outline (x0.5px)", 3, 0, 12)) * 0.5f;
             scene->add_effect<ClearScreen>();
             scene->add_effect<SDFEffect>(atlas, color, XPOS_CENTER, YPOS_CENTER, scale, 0.0f, spin, 0, 0, outline);
-            scene->add_effect<SDFEffect>(&SDF_STAR, Colors::YELLOW, XPOS_1_QUART, YPOS_CENTER, scale, 0.0f, spin, 7, 3, outline);
-            scene->add_effect<SDFEffect>(&SDF_HEART, Colors::RED, XPOS_3_QUART, YPOS_CENTER, scale, 0.0f, spin, -9, -3, outline);
-            scene->add_effect<SDFEffect>(&SDF_SHAMROCK, Colors::GREEN, XPOS_CENTER, YPOS_CENTER, scale, 0.0f, spin, -5, 5, outline);
+            scene->add_effect<SDFEffect>(SDF_STAR, Colors::YELLOW, XPOS_1_QUART, YPOS_CENTER, scale, 0.0f, spin, 7, 3, outline);
+            scene->add_effect<SDFEffect>(SDF_HEART, Colors::RED, XPOS_3_QUART, YPOS_CENTER, scale, 0.0f, spin, -9, -3, outline);
+            scene->add_effect<SDFEffect>(SDF_SHAMROCK, Colors::GREEN, XPOS_CENTER, YPOS_CENTER, scale, 0.0f, spin, -5, 5, outline);
             break;
         }
 
