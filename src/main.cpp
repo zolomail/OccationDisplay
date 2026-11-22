@@ -171,6 +171,7 @@ std::unique_ptr<Scene> createScene(SceneId id, MatrixPanel_I2S_DMA &display)
 
         case SceneId::FullscreenTest:
             scene->add_effect<GolfHoleInOne>();
+            scene->add_effect<ShowTime>(current_time, XPOS_CENTER, YPOS_CENTER, 0, 0, scene->color("Clock Color", Colors::ORANGE), scene->font("Clock Font", NORMAL_FONT), "dd hh:mm:ss", "2026-12-01 00:00:00", "Beta release!!");
             break;
 
         case SceneId::Test:
@@ -184,7 +185,7 @@ std::unique_ptr<Scene> createScene(SceneId id, MatrixPanel_I2S_DMA &display)
             scene->add_effect<FlyingText>("*", 20, 10, -2, -1, Colors::RED);
             scene->add_effect<FlyingText>("+", 100, 20, 1, -2, Colors::GREEN);
             scene->add_effect<FlyingText>("o", 80, 24, 2, -2, Colors::CYAN);
-            scene->add_effect<ShowTime>(current_time, XPOS_CENTER, YPOS_CENTER, 0, 0, scene->color("Clock Color", Colors::BLUE), scene->font("Clock Font", NORMAL_FONT), true);
+            scene->add_effect<ShowTime>(current_time, XPOS_CENTER, YPOS_CENTER, 0, 0, scene->color("Clock Color", Colors::BLUE), scene->font("Clock Font", NORMAL_FONT), "yyyy-mm-dd hh:mm:ss");
             scene->add_effect<Circle>();
             scene->add_effect<Circle>(80, 20, 12, Colors::BLUE);
             scene->add_effect<ScrollText>(
@@ -201,7 +202,7 @@ std::unique_ptr<Scene> createScene(SceneId id, MatrixPanel_I2S_DMA &display)
         case SceneId::NormalDays:
             scene->add_effect<ClearScreen>();
             scene->add_effect<ScrollText>(scene->text("Scroll Text", Config::DEFAULT_SCROLL), 26, -10, scene->color("Scroll Color", Colors::RED), scene->font("Scroll Font", TINY_WIDE_FONT));
-            scene->add_effect<ShowTime>(current_time, XPOS_CENTER, YPOS_CENTER, 0, 0, scene->color("Clock Color", Colors::BLUE), scene->font("Clock Font", NORMAL_FONT), true);
+            scene->add_effect<ShowTime>(current_time, XPOS_CENTER, YPOS_CENTER, 0, 0, scene->color("Clock Color", Colors::BLUE), scene->font("Clock Font", NORMAL_FONT), "yyyy-mm-dd hh:mm:ss");
             scene->add_effect<WeatherOverlay>(XPOS_CENTER, 0, scene->color("Weather Color", Colors::CYAN));
             break;
 
@@ -214,14 +215,14 @@ std::unique_ptr<Scene> createScene(SceneId id, MatrixPanel_I2S_DMA &display)
 
         case SceneId::Aquatic:
             scene->add_effect<ClearScreen>();
-            scene->add_effect<ShowTime>(current_time, XPOS_CENTER, YPOS_CENTER, 0, 0, scene->color("Clock Color", Colors::ORANGE), scene->font("Clock Font", TINY_WIDE_FONT), true);
+            scene->add_effect<ShowTime>(current_time, XPOS_CENTER, YPOS_CENTER, 0, 0, scene->color("Clock Color", Colors::ORANGE), scene->font("Clock Font", TINY_WIDE_FONT), "yyyy-mm-dd hh:mm:ss");
             scene->add_effect<BubblesInt>(static_cast<uint8_t>(scene->number("Bubbles", 16, 1, 100)));
             break;
 
         case SceneId::ValentinesDay:
             scene->add_effect<ClearScreen>();
             scene->add_effect<Hearts>(static_cast<uint8_t>(scene->number("Hearts", 16, 1, 100)));
-            scene->add_effect<ShowTime>(current_time, XPOS_CENTER, YPOS_1_QUART, 0, 0, scene->color("Clock Color", Colors::PURPLE), scene->font("Clock Font", TINY_WIDE_FONT), true);
+            scene->add_effect<ShowTime>(current_time, XPOS_CENTER, YPOS_1_QUART, 0, 0, scene->color("Clock Color", Colors::PURPLE), scene->font("Clock Font", TINY_WIDE_FONT), "yyyy-mm-dd hh:mm:ss");
             scene->add_effect<ScrollText>(scene->text("Scroll Text", Config::DEFAULT_SCROLL), YPOS_3_QUART, -10, scene->color("Scroll Color", Colors::RED), scene->font("Scroll Font", TINY_WIDE_FONT));
             break;
 
@@ -234,7 +235,7 @@ std::unique_ptr<Scene> createScene(SceneId id, MatrixPanel_I2S_DMA &display)
         case SceneId::ChristmasDays:
             scene->add_effect<ClearScreen>();
             scene->add_effect<SnowScape>(static_cast<uint8_t>(scene->number("Snow Flakes", 20, 0, 200)), static_cast<int16_t>(scene->number("Snow Height", 8, 1, 31)));
-            scene->add_effect<ShowTime>(current_time, XPOS_CENTER, YPOS_CENTER, 0, 0, scene->color("Clock Color", Colors::BLUE), scene->font("Clock Font", NORMAL_FONT), true);
+            scene->add_effect<ShowTime>(current_time, XPOS_CENTER, YPOS_CENTER, 0, 0, scene->color("Clock Color", Colors::BLUE), scene->font("Clock Font", NORMAL_FONT), "yyyy-mm-dd hh:mm:ss");
             break;
 
         case SceneId::ChristmasEve:
@@ -253,14 +254,14 @@ std::unique_ptr<Scene> createScene(SceneId id, MatrixPanel_I2S_DMA &display)
             scene->add_effect<Stars>(30);
             scene->add_effect<ShootingStar>(-1000);
             scene->add_effect<SnowScape>(static_cast<uint8_t>(scene->number("Snow Flakes", 20, 0, 200)), static_cast<int16_t>(scene->number("Snow Height", 4, 1, 31)));
-            scene->add_effect<ShowTime>(current_time, XPOS_CENTER, YPOS_CENTER, 0, 0, scene->color("Clock Color", Colors::BLUE), scene->font("Clock Font", NORMAL_FONT), true);
+            scene->add_effect<ShowTime>(current_time, XPOS_CENTER, YPOS_CENTER, 0, 0, scene->color("Clock Color", Colors::BLUE), scene->font("Clock Font", NORMAL_FONT), "yyyy-mm-dd hh:mm:ss");
             scene->add_effect<ScrollText>(scene->text("Scroll Text", Config::DEFAULT_SCROLL), YPOS_3_QUART, -10, scene->color("Scroll Color", Colors::RED), scene->font("Scroll Font", TINY_WIDE_FONT));
             scene->add_effect<FlyingPng>("/bitmaps/ufo.png", XPOS_CENTER, YPOS_1_QUART, 8, 0);
             break;
 
         case SceneId::Halloween:
             scene->add_effect<ClearScreen>();
-            scene->add_effect<ShowTime>(current_time, XPOS_CENTER, 27, 0, 0, scene->color("Clock Color", Colors::RED), scene->font("Clock Font", TINY_WIDE_FONT), true);
+            scene->add_effect<ShowTime>(current_time, XPOS_CENTER, 27, 0, 0, scene->color("Clock Color", Colors::RED), scene->font("Clock Font", TINY_WIDE_FONT), "yyyy-mm-dd hh:mm:ss");
             scene->add_effect<ScrollText>(scene->text("Scroll Text", "!!!HAPPY HALLOWEEN!!! --- \x81\x81\x81 --- "), YPOS_CENTER, -10, scene->color("Scroll Color", Colors::ORANGE), scene->font("Scroll Font", TINY_WIDE_FONT));
             scene->add_effect<FlyingPng>("/bitmaps/pumpkin.png", XPOS_CENTER, YPOS_CENTER, 16, 8);
             scene->add_effect<FlyingPng>("/bitmaps/pumpkin.png", 100, YPOS_CENTER, -15, -7);
