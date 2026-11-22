@@ -65,9 +65,9 @@ namespace Config
     constexpr int8_t   PIN_LAT       = 9;
     constexpr int8_t   PIN_OE        = 7;
 
-    constexpr uint8_t  BRIGHTNESS    = 32;
-    constexpr uint32_t FRAME_TIME_MS = 40; // ~25 FPS
-    constexpr bool     SHOW_CPU_LOAD_BAR = true; // 1-pixel CPU load bar on far right column
+    constexpr uint8_t  BRIGHTNESS      = 32;
+    constexpr uint32_t FRAME_TIME_MS   = 40; // ~25 FPS
+    constexpr uint32_t FRAME_BUDGET_US = FRAME_TIME_MS * 1000UL;
 
     // POSIX timezone string for Central European Time with automatic DST
     constexpr char     TZ_INFO[]     = "CET-1CEST,M3.5.0,M10.5.0/3";
@@ -473,9 +473,9 @@ void setup()
     Serial.println("Start...");
 }
 
-void BlinkLed(uint32_t frame_start, bool overloaded)
+void blinkLed(bool overloaded)
 {
-    static uint32_t last_led_toggle = 0;
+    static uint32_t last_toggle_ms = 0;
     static bool led_on = false;
 
     if (!overloaded) {
@@ -486,32 +486,31 @@ void BlinkLed(uint32_t frame_start, bool overloaded)
         return;
     }
 
-    if (frame_start - last_led_toggle >= 200)
-    {
-        last_led_toggle = frame_start;
+    const uint32_t now_ms = millis();
+    if (now_ms - last_toggle_ms >= 200) {
+        last_toggle_ms = now_ms;
         led_on = !led_on;
         rgbLedWrite(Config::LED_PIN, led_on ? 30 : 0, 0, 0);
     }
 }
 
-void drawCpuLoadBar(uint32_t render_us, uint32_t budget_us)
+void drawCpuLoadBar(uint32_t render_us)
 {
     if (!dma_display) return;
 
-    const int16_t x = dma_display->width() - 1;
+    const int16_t x        = dma_display->width() - 1;
     const int16_t screen_h = dma_display->height();
 
-    // Instantaneous load with slight smoothing (EMA) to prevent single-frame flicker
+    // Smooth instantaneous load (EMA) to prevent single-frame flicker
     static float smoothed_load = 0.0f;
-    const float current_load = static_cast<float>(render_us) / static_cast<float>(budget_us);
-    smoothed_load = (smoothed_load * 0.70f) + (current_load * 0.30f);
+    const float current_load   = static_cast<float>(render_us) / static_cast<float>(Config::FRAME_BUDGET_US);
+    smoothed_load              = (smoothed_load * 0.70f) + (current_load * 0.30f);
 
     int16_t bar_h = static_cast<int16_t>(lroundf(smoothed_load * screen_h));
-    if (bar_h < 0) bar_h = 0;
-    if (bar_h > screen_h) bar_h = screen_h;
+    bar_h         = constrain(bar_h, static_cast<int16_t>(0), screen_h);
 
-    // Peak-hold dot tracking with decay
-    static int16_t peak_dot = 0;
+    // Peak-hold dot with 60ms decay
+    static int16_t  peak_dot        = 0;
     static uint32_t last_peak_decay = 0;
     if (bar_h >= peak_dot) {
         peak_dot = bar_h;
@@ -520,30 +519,33 @@ void drawCpuLoadBar(uint32_t render_us, uint32_t budget_us)
         if (peak_dot > 0) peak_dot--;
     }
 
-    // 1. Clear background of empty top section of meter column
-    for (int16_t h = bar_h; h < screen_h; ++h) {
-        const int16_t y = (screen_h - 1) - h;
-        dma_display->drawPixel(x, y, Colors::BLACK);
+    // 1. Clear empty top portion
+    if (bar_h < screen_h) {
+        dma_display->drawFastVLine(x, 0, screen_h - bar_h, Colors::BLACK);
     }
 
-    // 2. Draw meter bar from bottom up (Green -> Yellow -> Red)
-    for (int16_t h = 0; h < bar_h; ++h) {
-        const int16_t y = (screen_h - 1) - h;
-        uint16_t col;
-        if (h >= 26) {
-            col = Colors::RED;       // > ~80% load
-        } else if (h >= 16) {
-            col = Colors::YELLOW;    // 50% - 80% load
-        } else {
-            col = Colors::GREEN;     // < 50% load
+    // 2. Draw Green (<50%), Yellow (50-80%), Red (>80%) segments bottom-up
+    const int16_t yellow_start = screen_h / 2;          // 16
+    const int16_t red_start    = (screen_h * 8) / 10;   // 25
+
+    const int16_t green_h = min(bar_h, yellow_start);
+    if (green_h > 0) {
+        dma_display->drawFastVLine(x, screen_h - green_h, green_h, Colors::GREEN);
+    }
+    if (bar_h > yellow_start) {
+        const int16_t yellow_h = min(bar_h, red_start) - yellow_start;
+        if (yellow_h > 0) {
+            dma_display->drawFastVLine(x, screen_h - yellow_start - yellow_h, yellow_h, Colors::YELLOW);
         }
-        dma_display->drawPixel(x, y, col);
+    }
+    if (bar_h > red_start) {
+        const int16_t red_h = bar_h - red_start;
+        dma_display->drawFastVLine(x, screen_h - bar_h, red_h, Colors::RED);
     }
 
-    // 3. Peak-hold indicator
+    // 3. Peak-hold dot
     if (peak_dot > 0 && peak_dot <= screen_h) {
-        const int16_t peak_y = (screen_h - 1) - (peak_dot - 1);
-        dma_display->drawPixel(x, peak_y, (peak_dot >= 26) ? Colors::RED : Colors::WHITE);
+        dma_display->drawPixel(x, screen_h - peak_dot, (peak_dot > red_start) ? Colors::RED : Colors::WHITE);
     }
 }
 
@@ -552,31 +554,21 @@ void drawCpuLoadBar(uint32_t render_us, uint32_t budget_us)
 // =========================================================================
 void loop()
 {
-    const uint32_t frame_start = millis();
     const uint32_t frame_start_us = micros();
 
     if (WebUi::isApMode()) {
-        // We are the Access Point (Show scene that displays connect info)
         renderScene(SceneId::SetupAp);
     } else if (SceneId id = checkWifiState(); id != SceneId::None) {
-        // We are trying to connect to an Access Point show scenes about how it is going
         renderScene(id);
     } else {
-        // We are connected to an Access Point, we are good to show scenes
         const time_t now = time(nullptr);
         localtime_r(&now, &current_time);
-        if (const SceneId override_id = WebUi::selectedScene(); override_id != SceneId::None)
-        {
-            renderScene(override_id);
-        } else {
-            renderScene(selectDateScene(current_time));
-        }
+        const SceneId override_id = WebUi::selectedScene();
+        renderScene((override_id != SceneId::None) ? override_id : selectDateScene(current_time));
 
-        if (WebUi::showIp())
-        {
+        if (WebUi::showIp()) {
             const IPAddress ip = WiFi.localIP();
-            if (!ip_overlay || ip != cached_ip)
-            {
+            if (!ip_overlay || ip != cached_ip) {
                 cached_ip  = ip;
                 ip_overlay = std::unique_ptr<FlyingText>(
                     new FlyingText(*dma_display, ip.toString(), XPOS_CENTER, 0, 0, 0, Colors::GREEN, TINY_WIDE_FONT));
@@ -585,21 +577,32 @@ void loop()
         }
     }
 
-    if (Config::SHOW_CPU_LOAD_BAR) {
-        const uint32_t render_us = micros() - frame_start_us;
-        const uint32_t budget_us = Config::FRAME_TIME_MS * 1000;
-        drawCpuLoadBar(render_us, budget_us);
+    static uint8_t clear_cpu_frames = 0;
+    static bool    prev_show_cpu    = true;
+    const bool     show_cpu         = WebUi::showCpuLoad();
+    if (prev_show_cpu && !show_cpu) {
+        clear_cpu_frames = 2;
+    }
+    prev_show_cpu = show_cpu;
+
+    if (show_cpu) {
+        drawCpuLoadBar(micros() - frame_start_us);
+    } else if (clear_cpu_frames > 0) {
+        dma_display->drawFastVLine(dma_display->width() - 1, 0, dma_display->height(), Colors::BLACK);
+        --clear_cpu_frames;
     }
 
     dma_display->flipDMABuffer();
     WebUi::handleClient();
 
-    const uint32_t elapsed = millis() - frame_start;
-    if (elapsed < Config::FRAME_TIME_MS) {
-        BlinkLed(frame_start, false);
-        delay(Config::FRAME_TIME_MS - elapsed);
+    const uint32_t frame_us = micros() - frame_start_us;
+    if (frame_us < Config::FRAME_BUDGET_US) {
+        blinkLed(false);
+        const uint32_t remaining_ms = (Config::FRAME_BUDGET_US - frame_us) / 1000UL;
+        if (remaining_ms > 0) {
+            delay(remaining_ms);
+        }
     } else {
-        //Serial.println("Rendering took too long");
-        BlinkLed(frame_start, true);
+        blinkLed(true);
     }
 }

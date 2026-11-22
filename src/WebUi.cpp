@@ -50,6 +50,7 @@ String wifi_err      = "";
 
 bool    is_ap          = false;
 bool    show_ip        = true;
+bool    show_cpu       = true;
 bool    scene_dirty    = false;
 SceneId selected_scene = SceneId::None;
 
@@ -248,7 +249,7 @@ esp_err_t serveStaticFile(httpd_req_t* req, const char* path, const char* conten
         return ESP_FAIL;
     }
     httpd_resp_set_type(req, content_type);
-    httpd_resp_set_hdr(req, "Cache-Control", "public, max-age=3600");
+    httpd_resp_set_hdr(req, "Cache-Control", "no-cache");
     return httpd_resp_send(req, content.c_str(), content.length());
 }
 
@@ -297,6 +298,7 @@ esp_err_t handleRootHttp(httpd_req_t* req)
         { "WIFI_ERROR_BLOCK", wifi_err_block },
         { "WEATHER_TEXT",     weather_text },
         { "SCENE_OPTIONS",    options_html },
+        { "SHOW_CPU_CHECKED", show_cpu ? "checked" : "" },
         { "SHOW_IP_CHECKED",  show_ip ? "checked" : "" },
         { "WIFI_SSID",        htmlEscape(wifi_ssid) }
     });
@@ -317,7 +319,18 @@ esp_err_t handleOptionsHttp(httpd_req_t* req)
         }
     }
     if (getFormArg(body, "show_ip", val)) {
-        show_ip = (val == "1");
+        const bool next = (val == "1");
+        if (next != show_ip) {
+            show_ip = next;
+            scene_dirty = true;
+        }
+    }
+    if (getFormArg(body, "show_cpu", val)) {
+        const bool next = (val == "1");
+        if (next != show_cpu) {
+            show_cpu = next;
+            scene_dirty = true;
+        }
     }
 
     httpd_resp_set_type(req, "text/plain");
@@ -565,6 +578,7 @@ void startAccessPoint(const char* reason)
 bool isApMode()            { return is_ap; }
 SceneId selectedScene()    { return selected_scene; }
 bool showIp()              { return show_ip; }
+bool showCpuLoad()         { return show_cpu; }
 bool consumeSceneDirty()   { const bool d = scene_dirty; scene_dirty = false; return d; }
 const String& wifiError()  { return wifi_err; }
 const char* apSsid()       { return AP_SSID; }

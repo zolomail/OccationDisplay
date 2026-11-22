@@ -98,7 +98,8 @@ function loadSceneConfig() {
 
 function updateOptions() {
   const params = 'scene_id=' + encodeURIComponent(document.getElementById('scene_id').value) +
-                 '&show_ip=' + (document.getElementById('show_ip').checked ? '1' : '0');
+                 '&show_ip=' + (document.getElementById('show_ip').checked ? '1' : '0') +
+                 '&show_cpu=' + (document.getElementById('show_cpu').checked ? '1' : '0');
   return fetch('/options', {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -108,6 +109,10 @@ function updateOptions() {
 
 document.getElementById('scene_id').addEventListener('change', () => {
   updateOptions().then(() => loadSceneConfig());
+});
+
+document.getElementById('show_cpu').addEventListener('change', () => {
+  updateOptions().then(() => showToast('Display updated'));
 });
 
 document.getElementById('show_ip').addEventListener('change', () => {

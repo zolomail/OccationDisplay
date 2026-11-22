@@ -12,6 +12,7 @@ void startAccessPoint(const char* reason);
 bool    isApMode();
 SceneId selectedScene();
 bool    showIp();
+bool    showCpuLoad();
 bool    consumeSceneDirty();
 
 const String& wifiError();
