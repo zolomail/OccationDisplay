@@ -103,8 +103,29 @@ int32_t Scene::number(const char* label, int32_t default_val, int32_t min_val, i
 	}
 	if (v < min_val) v = min_val;
 	if (v > max_val) v = max_val;
-	m_params.push_back({ key, label, SceneParamType::Number, String(v), min_val, max_val });
+	m_params.push_back({ key, label, SceneParamType::Number, String(v), min_val, max_val, {} });
 	return v;
+}
+
+uint8_t Scene::select(const char* label, uint8_t default_val, const std::vector<const char*>& options)
+{
+	const String key = makeKey(label);
+	long v = static_cast<long>(default_val);
+	String ov;
+	if (getOverride(m_id, key, ov)) {
+		v = ov.toInt();
+	}
+	const long max_idx = options.empty() ? 0L : static_cast<long>(options.size() - 1);
+	if (v < 0L) v = 0L;
+	if (v > max_idx) v = max_idx;
+
+	SceneParam p{ key, label, SceneParamType::Select, String(v), 0, max_idx, {} };
+	p.options.reserve(options.size());
+	for (const char* opt : options) {
+		p.options.emplace_back(opt);
+	}
+	m_params.push_back(std::move(p));
+	return static_cast<uint8_t>(v);
 }
 
 namespace SceneParams {

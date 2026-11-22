@@ -41,16 +41,18 @@ enum class SceneParamType : uint8_t {
 	Text,
 	Color,
 	Font,
-	Number
+	Number,
+	Select
 };
 
 struct SceneParam {
-	String         key;
-	String         label;
-	SceneParamType type;
-	String         value;
-	int32_t        min_val = 0;
-	int32_t        max_val = 0;
+	String              key;
+	String              label;
+	SceneParamType      type;
+	String              value;
+	int32_t             min_val = 0;
+	int32_t             max_val = 0;
+	std::vector<String> options;
 };
 
 class Scene
@@ -88,6 +90,7 @@ public:
 	uint16_t color(const char* label, uint16_t default_rgb565);
 	uint8_t  font(const char* label, uint8_t default_font);
 	int32_t  number(const char* label, int32_t default_val, int32_t min_val, int32_t max_val);
+	uint8_t  select(const char* label, uint8_t default_val, const std::vector<const char*>& options);
 
 private:
 	SceneId                              m_id      = SceneId::None;

@@ -303,11 +303,15 @@ std::unique_ptr<Scene> createScene(SceneId id, MatrixPanel_I2S_DMA &display)
             scene->add_effect<FlyingText>(String(current_year), XPOS_CENTER, YPOS_2_THIRD, 0, 0, scene->color("Year Color", Colors::WHITE), scene->font("Year Font", NORMAL_FONT));
             break;
 
-        case SceneId::Test1:
+        case SceneId::Test1: {
+            const uint8_t pattern_idx = scene->select("Border Type", static_cast<uint8_t>(BorderPattern::Solid), {
+                "Solid", "Dashed", "Chase", "Twinkle", "Rainbow"
+            });
             scene->add_effect<ClearScreen>();
-            scene->add_effect<Border>(2, scene->color("Border Color 1", Colors::RED), scene->color("Border Color 2", Colors::YELLOW), BorderPattern::Solid);
-            scene->add_effect<FlyingText>(scene->text("Label Text", "Test 1: Solid"), XPOS_CENTER, YPOS_CENTER, 0, 0, scene->color("Text Color", Colors::WHITE), scene->font("Text Font", TINY_WIDE_FONT));
+            scene->add_effect<Border>(static_cast<uint8_t>(scene->number("Thickness", 2, 1, 8)), scene->color("Border Color 1", Colors::RED), scene->color("Border Color 2", Colors::YELLOW), static_cast<BorderPattern>(pattern_idx), static_cast<uint8_t>(scene->number("Stripe Length", 4, 1, 32)), static_cast<int8_t>(scene->number("Speed", 2, -16, 16)));
+            scene->add_effect<FlyingText>(scene->text("Label Text", "Border Test"), XPOS_CENTER, YPOS_CENTER, 0, 0, scene->color("Text Color", Colors::WHITE), scene->font("Text Font", TINY_WIDE_FONT));
             break;
+        }
 
         case SceneId::Test2:
             scene->add_effect<ClearScreen>();

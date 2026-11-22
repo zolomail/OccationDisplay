@@ -84,6 +84,13 @@ function loadSceneConfig() {
         } else if (p.t === 'number') {
           h += '<div class="field"><label for="f_' + k + '">' + l + '</label>' +
                '<input id="f_' + k + '" type="number" data-k="' + k + '" min="' + p.min + '" max="' + p.max + '" value="' + escHtml(p.v) + '"></div>';
+        } else if (p.t === 'select') {
+          let sel = '<select id="f_' + k + '" data-k="' + k + '">';
+          (p.opts || []).forEach((opt, idx) => {
+            sel += '<option value="' + idx + '"' + (Number(p.v) === idx ? ' selected' : '') + '>' + escHtml(opt) + '</option>';
+          });
+          sel += '</select>';
+          h += '<div class="field"><label for="f_' + k + '">' + l + '</label>' + sel + '</div>';
         }
       }
       h += '<div class="actions">' +

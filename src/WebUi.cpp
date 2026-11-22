@@ -77,7 +77,7 @@ constexpr SceneOption SCENE_OPTIONS[] = {
     { SceneId::BumpMapEffect,    "BumpMapEffect"    },
     { SceneId::ValentinesDay,    "ValentinesDay"    },
     { SceneId::CubeEffect,       "CubeEffect"       },
-    { SceneId::Test1,            "Test 1"           },
+    { SceneId::Test1,            "Border Test"      },
     { SceneId::Test2,            "Test 2"           },
     { SceneId::Test3,            "Test 3"           },
     { SceneId::Test4,            "Test 4"           },
@@ -363,6 +363,7 @@ const char* paramTypeName(SceneParamType t)
         case SceneParamType::Color:  return "color";
         case SceneParamType::Font:   return "font";
         case SceneParamType::Number: return "number";
+        case SceneParamType::Select: return "select";
     }
     return "text";
 }
@@ -414,6 +415,13 @@ esp_err_t handleSceneConfigGetHttp(httpd_req_t* req)
             if (p.type == SceneParamType::Number) {
                 json += ",\"min\":" + String(p.min_val);
                 json += ",\"max\":" + String(p.max_val);
+            } else if (p.type == SceneParamType::Select) {
+                json += ",\"opts\":[";
+                for (size_t j = 0; j < p.options.size(); ++j) {
+                    if (j > 0) json += ',';
+                    json += "\"" + jsonEscape(p.options[j]) + "\"";
+                }
+                json += "]";
             }
             json += "}";
         }
