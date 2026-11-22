@@ -176,7 +176,7 @@ std::unique_ptr<Scene> createScene(SceneId id, MatrixPanel_I2S_DMA &display)
 
         case SceneId::TrackmanTM5Beta:
             scene->add_effect<GolfHoleInOne>();
-            scene->add_effect<FlyingText>(scene->text("Title", "Countdown to TM5 Beta"), XPOS_CENTER, 0, 0, 0, scene->color("Title Color", Colors::BLUE), scene->font("Title Font", TINY_WIDE_FONT));
+            scene->add_effect<FlyingText>(scene->text("Title", "Countdown to TM5 Beta"), XPOS_CENTER, 0, 0, 0, scene->color("Title Color", Colors::BLACK), scene->font("Title Font", TINY_WIDE_FONT));
             scene->add_effect<ShowTime>(current_time, XPOS_CENTER, YPOS_3_QUART, 0, 0, scene->color("Clock Color", Colors::ORANGE), scene->font("Clock Font", NORMAL_FONT), "dd hh:mm:ss", "2026-12-01 00:00:00", "Beta release!!");
 //          scene->add_effect<FlyingPng>("/bitmaps/trackman.png", 10, 4, 8, 4, true, false);
             break;
@@ -346,9 +346,10 @@ std::unique_ptr<Scene> createScene(SceneId id, MatrixPanel_I2S_DMA &display)
             const float spin = static_cast<float>(scene->number("Spin Speed", 2, -15, 15));
             const float outline = static_cast<float>(scene->number("Outline (x0.5px)", 3, 0, 12)) * 0.5f;
             scene->add_effect<ClearScreen>();
-            scene->add_effect<SDFEffect>(atlas, color, XPOS_1_QUART, YPOS_CENTER, scale, 0.0f, spin, 0, 0, outline);
-            scene->add_effect<SDFEffect>(atlas, color, XPOS_CENTER, YPOS_CENTER, scale, 0.0f, spin, 7, 3, outline);
-            scene->add_effect<SDFEffect>(atlas, color, XPOS_3_QUART, YPOS_CENTER, scale, 0.0f, spin, -9, -3, outline);
+            scene->add_effect<SDFEffect>(atlas, color, XPOS_CENTER, YPOS_CENTER, scale, 0.0f, spin, 0, 0, outline);
+            scene->add_effect<SDFEffect>(&SDF_STAR, Colors::YELLOW, XPOS_1_QUART, YPOS_CENTER, scale, 0.0f, spin, 7, 3, outline);
+            scene->add_effect<SDFEffect>(&SDF_HEART, Colors::RED, XPOS_3_QUART, YPOS_CENTER, scale, 0.0f, spin, -9, -3, outline);
+            scene->add_effect<SDFEffect>(&SDF_SHAMROCK, Colors::GREEN, XPOS_CENTER, YPOS_CENTER, scale, 0.0f, spin, -5, 5, outline);
             break;
         }
 
