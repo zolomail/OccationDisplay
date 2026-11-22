@@ -34,6 +34,7 @@
 #include "effects/Cube3D.h"
 #include "effects/QrCode.h"
 #include "effects/Border.h"
+#include "effects/GolfHoleInOne.h"
 
 namespace {
 // =========================================================================
@@ -169,7 +170,7 @@ std::unique_ptr<Scene> createScene(SceneId id, MatrixPanel_I2S_DMA &display)
             break;
 
         case SceneId::FullscreenTest:
-            scene->add_effect<FlyingPng>("/fullscreen/golfer.png", 0, 0, 0, 0, false, true);
+            scene->add_effect<GolfHoleInOne>();
             break;
 
         case SceneId::Test:

@@ -15,44 +15,6 @@ struct DecodeContext {
     PNG *png;
 };
 
-void *pngOpenCallback(const char *szFilename, int32_t *pFileSize)
-{
-    if (!LittleFS.exists(szFilename)) {
-        Serial.printf("FlyingPng: file not found on LittleFS: '%s'\n", szFilename);
-        return nullptr;
-    }
-    File f = LittleFS.open(szFilename, "r");
-    if (!f || f.isDirectory()) {
-        Serial.printf("FlyingPng: failed to open file '%s'\n", szFilename);
-        return nullptr;
-    }
-    *pFileSize = static_cast<int32_t>(f.size());
-    return new File(f);
-}
-
-void pngCloseCallback(void *pHandle)
-{
-    auto *f = static_cast<File *>(pHandle);
-    if (f) {
-        f->close();
-        delete f;
-    }
-}
-
-int32_t pngReadCallback(PNGFILE *pFile, uint8_t *pBuf, int32_t iLen)
-{
-    auto *f = static_cast<File *>(pFile->fHandle);
-    if (!f) return 0;
-    return static_cast<int32_t>(f->read(pBuf, iLen));
-}
-
-int32_t pngSeekCallback(PNGFILE *pFile, int32_t iPosition)
-{
-    auto *f = static_cast<File *>(pFile->fHandle);
-    if (!f) return 0;
-    return f->seek(iPosition) ? iPosition : -1;
-}
-
 void pngDrawCallback(PNGDRAW *pDraw)
 {
     auto *ctx = static_cast<DecodeContext *>(pDraw->pUser);
@@ -184,50 +146,27 @@ FlyingPng::FlyingPng(
 
 bool FlyingPng::decodeFromFs(const char *filepath)
 {
-    auto png = std::make_unique<PNG>();
-    const int rc = png->open(
-        filepath,
-        pngOpenCallback,
-        pngCloseCallback,
-        pngReadCallback,
-        pngSeekCallback,
-        pngDrawCallback
-    );
-    if (rc != PNG_SUCCESS) {
-        Serial.printf("FlyingPng: failed to open '%s', rc=%d\n", filepath, rc);
+    if (!LittleFS.exists(filepath)) {
+        Serial.printf("FlyingPng: file not found on LittleFS: '%s'\n", filepath);
         return false;
     }
-
-    m_width = png->getWidth();
-    m_height = png->getHeight();
-    if (m_width <= 0 || m_height <= 0 || m_width > 512 || m_height > 512) {
-        Serial.printf("FlyingPng: invalid image dimensions for '%s' (w=%d, h=%d)\n", filepath, m_width, m_height);
-        png->close();
+    File f = LittleFS.open(filepath, "r");
+    if (!f || f.isDirectory()) {
+        Serial.printf("FlyingPng: failed to open file '%s'\n", filepath);
         return false;
     }
-
-    const size_t total_pixels = m_width * m_height;
-    m_rgb.assign(total_pixels, 0);
-
-    if (m_use_transparency) {
-        const size_t row_bytes = (m_width + 7) / 8;
-        const size_t total_mask_bytes = row_bytes * m_height;
-        m_mask.assign(total_mask_bytes, 0);
-    } else {
-        m_mask.clear();
-    }
-
-    DecodeContext ctx{m_width, m_height, &m_rgb, m_use_transparency ? &m_mask : nullptr, false, png.get()};
-    const int dec_rc = png->decode(&ctx, 0);
-    png->close();
-
-    if (dec_rc != PNG_SUCCESS) {
-        Serial.printf("FlyingPng: decode error '%s', rc=%d\n", filepath, dec_rc);
+    const size_t sz = f.size();
+    if (sz == 0 || sz > 65536) {
+        f.close();
         return false;
     }
-
-    m_has_alpha = m_use_transparency && ctx.has_alpha;
-    return true;
+    std::vector<uint8_t> raw(sz);
+    const size_t nread = f.read(raw.data(), sz);
+    f.close();
+    if (nread != sz) {
+        return false;
+    }
+    return decodeFromRam(raw.data(), sz);
 }
 
 bool FlyingPng::decodeFromRam(const uint8_t *data, size_t size)
