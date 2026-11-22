@@ -254,8 +254,8 @@ std::unique_ptr<Scene> createScene(SceneId id, MatrixPanel_I2S_DMA &display)
             scene->add_effect<ShootingStar>(-1000);
             scene->add_effect<SnowScape>(static_cast<uint8_t>(scene->number("Snow Flakes", 20, 0, 200)), static_cast<int16_t>(scene->number("Snow Height", 4, 1, 31)));
             scene->add_effect<ShowTime>(current_time, XPOS_CENTER, YPOS_CENTER, 0, 0, scene->color("Clock Color", Colors::BLUE), scene->font("Clock Font", NORMAL_FONT), true);
-            scene->add_effect<ScrollText>(scene->text("Scroll Text", Config::DEFAULT_SCROLL), 21, -10, scene->color("Scroll Color", Colors::RED), scene->font("Scroll Font", TINY_WIDE_FONT));
-            scene->add_effect<FlyingPng>("/bitmaps/ufo.png", XPOS_CENTER, YPOS_CENTER, 8, 0);
+            scene->add_effect<ScrollText>(scene->text("Scroll Text", Config::DEFAULT_SCROLL), YPOS_3_QUART, -10, scene->color("Scroll Color", Colors::RED), scene->font("Scroll Font", TINY_WIDE_FONT));
+            scene->add_effect<FlyingPng>("/bitmaps/ufo.png", XPOS_CENTER, YPOS_1_QUART, 8, 0);
             break;
 
         case SceneId::Halloween:
@@ -286,9 +286,9 @@ std::unique_ptr<Scene> createScene(SceneId id, MatrixPanel_I2S_DMA &display)
             scene->add_effect<ClearScreen>();
             scene->add_effect<Stars>();
             scene->add_effect<FireWorks>();
-            scene->add_effect<FlyingText>(scene->text("Message", "Happy New Year"), XPOS_CENTER, 5, 0, 0, scene->color("Message Color", Colors::BLUE), scene->font("Message Font", NORMAL_FONT));
-            scene->add_effect<FlyingText>(String(current_year + 1), XPOS_CENTER, 13, 0, 0, scene->color("Year Color", Colors::WHITE), scene->font("Year Font", NORMAL_FONT));
-            scene->add_effect<ShowTime>(current_time, XPOS_CENTER, 21, 0, 0, scene->color("Clock Color", Colors::CYAN), scene->font("Clock Font", NORMAL_FONT));
+            scene->add_effect<FlyingText>(scene->text("Message", "Happy New Year"), XPOS_CENTER, YPOS_1_QUART, 0, 0, scene->color("Message Color", Colors::BLUE), scene->font("Message Font", NORMAL_FONT));
+            scene->add_effect<FlyingText>(String(current_year), XPOS_CENTER, YPOS_CENTER, 0, 0, scene->color("Year Color", Colors::WHITE), scene->font("Year Font", NORMAL_FONT));
+            scene->add_effect<ShowTime>(current_time, XPOS_CENTER, YPOS_3_QUART, 0, 0, scene->color("Clock Color", Colors::CYAN), scene->font("Clock Font", NORMAL_FONT));
             break;
 
         case SceneId::NewYearsMidnight:
@@ -298,7 +298,8 @@ std::unique_ptr<Scene> createScene(SceneId id, MatrixPanel_I2S_DMA &display)
             scene->add_effect<FireWorks>(-200);
             scene->add_effect<FireWorks>(-200);
             scene->add_effect<FireWorks>(-200);
-            scene->add_effect<FlyingText>(scene->text("Message", "Happy New Year"), XPOS_CENTER, 12, 0, 0, scene->color("Message Color", Colors::BLUE), scene->font("Message Font", NORMAL_FONT));
+            scene->add_effect<FlyingText>(scene->text("Message", "Happy New Year"), XPOS_CENTER, YPOS_1_THIRD, 0, 0, scene->color("Message Color", Colors::BLUE), scene->font("Message Font", NORMAL_FONT));
+            scene->add_effect<FlyingText>(String(current_year), XPOS_CENTER, YPOS_2_THIRD, 0, 0, scene->color("Year Color", Colors::WHITE), scene->font("Year Font", NORMAL_FONT));
             break;
 
         case SceneId::Test1:

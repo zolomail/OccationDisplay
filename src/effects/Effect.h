@@ -25,11 +25,15 @@ enum PosAnchor : int16_t {
 	XPOS_1_QUART = 0x3000, // 12288: Centered in the left half (1/4 width)
 	XPOS_3_QUART = 0x4000, // 16384: Centered in the right half (3/4 width)
 	XPOS_RIGHT   = 0x5000, // 20480: Right-aligned to (width - 1)
+	XPOS_1_THIRD = 0x6000, // 24576: Centered at 1/3 width
+	XPOS_2_THIRD = 0x7000, // 28672: Centered at 2/3 width
 
 	YPOS_CENTER  = 0x2000, //  8192: Centered vertically
 	YPOS_1_QUART = 0x3000, // 12288: Centered in the top half (1/4 height)
 	YPOS_3_QUART = 0x4000, // 16384: Centered in the bottom half (3/4 height)
-	YPOS_BOTTOM  = 0x5000  // 20480: Bottom-aligned to (height - 1)
+	YPOS_BOTTOM  = 0x5000, // 20480: Bottom-aligned to (height - 1)
+	YPOS_1_THIRD = 0x6000, // 24576: Centered at 1/3 height
+	YPOS_2_THIRD = 0x7000  // 28672: Centered at 2/3 height
 };
 
 static constexpr uint16_t color565(uint8_t r, uint8_t g, uint8_t b)
@@ -100,6 +104,12 @@ protected:
 		if (spec >= (XPOS_RIGHT - 2048) && spec < (XPOS_RIGHT + 2048)) {
 			const int16_t align = (w > 0) ? w : 1;
 			return (display_size - align) + (spec - XPOS_RIGHT);
+		}
+		if (spec >= (XPOS_1_THIRD - 2048) && spec < (XPOS_1_THIRD + 2048)) {
+			return ((display_size / 3) - (w / 2)) + (spec - XPOS_1_THIRD);
+		}
+		if (spec >= (XPOS_2_THIRD - 2048) && spec < (XPOS_2_THIRD + 2048)) {
+			return (((display_size * 2) / 3) - (w / 2)) + (spec - XPOS_2_THIRD);
 		}
 		return spec;
 	}
