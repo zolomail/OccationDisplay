@@ -175,9 +175,9 @@ std::unique_ptr<Scene> createScene(SceneId id, MatrixPanel_I2S_DMA &display)
 
         case SceneId::TrackmanTM5Beta:
             scene->add_effect<GolfHoleInOne>();
-//            scene->add_effect<FlyingText>(scene->text("Title", "Countdown to TM5 Beta"), XPOS_CENTER, YPOS_1_THIRD, 0, 0, scene->color("Title Color", Colors::BLUE), scene->font("Title Font", TINY_WIDE_FONT));
+            scene->add_effect<FlyingText>(scene->text("Title", "Countdown to TM5 Beta"), XPOS_CENTER, YPOS_1_THIRD, 0, 0, scene->color("Title Color", Colors::BLUE), scene->font("Title Font", TINY_WIDE_FONT));
             scene->add_effect<ShowTime>(current_time, XPOS_CENTER, YPOS_2_THIRD, 0, 0, scene->color("Clock Color", Colors::ORANGE), scene->font("Clock Font", NORMAL_FONT), "dd hh:mm:ss", "2026-12-01 00:00:00", "Beta release!!");
-            scene->add_effect<FlyingPng>("/bitmaps/trackman.png", 10, 4, 8, 4, true, false);
+//          scene->add_effect<FlyingPng>("/bitmaps/trackman.png", 10, 4, 8, 4, true, false);
             break;
 
         case SceneId::Test:
@@ -309,7 +309,7 @@ std::unique_ptr<Scene> createScene(SceneId id, MatrixPanel_I2S_DMA &display)
             scene->add_effect<FlyingText>(String(current_year), XPOS_CENTER, YPOS_2_THIRD, 0, 0, scene->color("Year Color", Colors::WHITE), scene->font("Year Font", NORMAL_FONT));
             break;
 
-        case SceneId::Test1: {
+        case SceneId::BorderTest: {
             const uint8_t pattern_idx = scene->select("Border Type", static_cast<uint8_t>(BorderPattern::Solid), {
                 "Solid", "Dashed", "Chase", "Twinkle", "Rainbow"
             });
@@ -319,10 +319,9 @@ std::unique_ptr<Scene> createScene(SceneId id, MatrixPanel_I2S_DMA &display)
             break;
         }
 
-        case SceneId::Test2:
+        case SceneId::ScrollerTest:
             scene->add_effect<ClearScreen>();
-            scene->add_effect<Border>(2, scene->color("Border Color 1", Colors::RED), scene->color("Border Color 2", Colors::WHITE), BorderPattern::Dashed, 4, 2);
-            scene->add_effect<FlyingText>(scene->text("Label Text", "Test 2: Dashed"), XPOS_CENTER, YPOS_CENTER, 0, 0, scene->color("Text Color", Colors::WHITE), scene->font("Text Font", TINY_WIDE_FONT));
+            scene->add_effect<ScrollText>(scene->text("Scroll Text", Config::DEFAULT_SCROLL), YPOS_CENTER, -10, scene->color("Scroll Color", Colors::RED), scene->font("Scroll Font", TINY_WIDE_FONT));
             break;
 
         case SceneId::Test3:
@@ -609,7 +608,7 @@ void loop()
             if (!ip_overlay || ip != cached_ip) {
                 cached_ip  = ip;
                 ip_overlay = std::unique_ptr<FlyingText>(
-                    new FlyingText(*dma_display, ip.toString(), XPOS_CENTER, 0, 0, 0, Colors::GREEN, TINY_WIDE_FONT));
+                    new FlyingText(*dma_display, ip.toString(), XPOS_CENTER, 0, 0, 0, Colors::GREEN, ZOLO_MICRO_FONT));
             }
             ip_overlay->render();
         }

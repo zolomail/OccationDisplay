@@ -4,7 +4,10 @@ const FONTS = [
   [2, 'Small Wide (6x8)'],
   [3, 'Org 01 (5x5)'],
   [4, 'Tom Thumb (3x5)'],
-  [5, 'Picopixel (3x5)']
+  [5, 'Picopixel (3x5)'],
+  [6, 'Zolo Micro (4x4)'],
+  [7, 'Wide (5x5)'],
+  [8, 'Space Grotesk Bold (32px)']
 ];
 
 let toastTimer = null;
@@ -124,6 +127,20 @@ document.getElementById('show_cpu').addEventListener('change', () => {
 
 document.getElementById('show_ip').addEventListener('change', () => {
   updateOptions().then(() => showToast('Display updated'));
+});
+
+const aboutModal = document.getElementById('about-modal');
+document.getElementById('btn-about').addEventListener('click', () => {
+  aboutModal.hidden = false;
+});
+document.getElementById('btn-about-close').addEventListener('click', () => {
+  aboutModal.hidden = true;
+});
+aboutModal.addEventListener('click', (e) => {
+  if (e.target === aboutModal) aboutModal.hidden = true;
+});
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && !aboutModal.hidden) aboutModal.hidden = true;
 });
 
 loadSceneConfig();

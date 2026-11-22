@@ -34,14 +34,15 @@ class Char:
 		return total_data.to_bytes(int((self.width*self.height+7)/8), byteorder='big')
 
 
-def find_masked(all_data, all_mask, data):
-	for i in range(len(all_data)-len(data)):
-		for n,j in enumerate(data):
-			if j&all_mask[i+n] != all_data[i+n]&all_mask[i+n]:
+def find_masked(all_data, all_mask, data, mask):
+	for i in range(len(all_data) - len(data) + 1):
+		for n, j in enumerate(data):
+			overlap = all_mask[i + n] & mask[n]
+			if (j & overlap) != (all_data[i + n] & overlap):
 				break
 		else:
 			return i
-	return False
+	return None
 
 class DataConverter:
 	def __init__(self, outname):
@@ -91,19 +92,19 @@ class DataConverter:
 		compression = 0
 		for char in font_chars:
 			data = char.getData()
-			if pos:=find_masked(all_data,all_mask, data):
-#				print(f"MASKED FOUND!!! Found {char.ascii} match at {pos} saves {len(data)}")
-#				print(",".join([f"0x{d:02x}" for d in data]+[""]))
-#				print(",".join([f"0x{d:02x}" for d in all_data[pos:pos+len(data)]]+[""]))
-				all_data[pos+len(data)-1] = data[-1]
-				all_mask[pos+len(data)-1] = char.getMask()[-1]
+			mask = char.getMask()
+			pos = find_masked(all_data, all_mask, data, mask)
+			if pos is not None:
+				for k in range(len(data)):
+					all_data[pos + k] = (all_data[pos + k] & ~mask[k]) | (data[k] & mask[k])
+					all_mask[pos + k] |= mask[k]
 				char.bitmapOffset = pos
 				compression += len(data)
 				continue
 
 			char.bitmapOffset = len(all_data)
 			all_data += data
-			all_mask += char.getMask()
+			all_mask += mask
 #			data_str = ",".join([f"0x{d:02x}" for d in char.getData()]+[""])
 #			self.outfile.write(f"\t{data_str:80}\t // {char.ascii if char.ascii>31 and char.ascii < 0x7f else 32:c} : 0x{char.ascii:02x}\n")
 

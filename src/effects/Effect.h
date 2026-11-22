@@ -4,6 +4,9 @@
 #include <Adafruit_GFX.h>    // Core graphics library
 #include "fonts/TinyWide.h"
 #include "fonts/SmallWide.h"
+#include "fonts/ZoloMicro.h"
+#include "fonts/Wide.h"
+#include "fonts/SpaceGroteskBold32.h"
 #include <Fonts/Org_01.h>
 #include <Fonts/TomThumb.h>
 #include <Fonts/Picopixel.h>
@@ -14,7 +17,10 @@ enum FontId : uint8_t {
 	SMALL_WIDE_FONT = 2, // Custom 6x8 caps / 5x5 lowercase wide font (+ 0x80/0x81 icons)
 	ORG_01_FONT     = 3, // Adafruit 5x5 retro wide font
 	TOM_THUMB_FONT  = 4, // Adafruit 3x5 compact pixel font
-	PICOPIXEL_FONT  = 5  // Adafruit 3x5 proportional micro font
+	PICOPIXEL_FONT  = 5, // Adafruit 3x5 proportional micro font
+	ZOLO_MICRO_FONT       = 6, // Custom 4x4 micro pixel font
+	WIDE_FONT             = 7, // Custom 5x5 single-width wide pixel font
+	SPACE_GROTESK_32_FONT = 8  // Space Grotesk Bold 32px
 };
 
 // Position anchors in int16_t space.
@@ -71,6 +77,15 @@ public:
 				break;
 			case PICOPIXEL_FONT:
 				m_matrix.setFont(&Picopixel);
+				break;
+			case ZOLO_MICRO_FONT:
+				m_matrix.setFont(&ZoloMicro);
+				break;
+			case WIDE_FONT:
+				m_matrix.setFont(&wide);
+				break;
+			case SPACE_GROTESK_32_FONT:
+				m_matrix.setFont(&SpaceGroteskBold32);
 				break;
 			default:
 				m_matrix.setFont();

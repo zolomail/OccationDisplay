@@ -86,7 +86,7 @@ uint8_t Scene::font(const char* label, uint8_t default_font)
 	if (getOverride(m_id, key, ov)) {
 		f = ov.toInt();
 	}
-	constexpr long max_font = static_cast<long>(PICOPIXEL_FONT);
+	constexpr long max_font = static_cast<long>(SPACE_GROTESK_32_FONT);
 	if (f < 0L) f = 0L;
 	if (f > max_font) f = max_font;
 	m_params.push_back({ key, label, SceneParamType::Font, String(f), 0, max_font });

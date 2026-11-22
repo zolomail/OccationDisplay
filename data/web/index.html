@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <title>Occasion Display</title>
-  <link rel="stylesheet" href="/style.css?v=3">
+  <link rel="stylesheet" href="/style.css?v=6">
 </head>
 <body>
   <main class="container">
@@ -13,6 +13,7 @@
         <h1>Occasion Display</h1>
         <p class="subtitle">{{WEATHER_TEXT}}</p>
       </div>
+      <button type="button" id="btn-about" class="btn-icon" aria-label="About">?</button>
     </header>
 
     {{WIFI_ERROR_BLOCK}}
@@ -71,7 +72,29 @@
     </details>
   </main>
 
+  <div id="about-modal" class="modal" hidden role="dialog" aria-modal="true" aria-labelledby="about-title">
+    <div class="modal-card">
+      <h2 id="about-title">Occation Display</h2>
+      <p>ESP32-S3 HUB75 LED matrix display for customizable occasion scenes, animations, live clock, and weather.</p>
+      <p>&copy; Jeppe S. S&oslash;rensen 2026<br><a href="mailto:zolomail@gmail.com" style="color:var(--accent);">zolomail@gmail.com</a></p>
+      <div class="actions">
+        <button type="button" id="btn-about-close" class="btn btn-primary">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="about-modal" class="modal" hidden role="dialog" aria-modal="true" aria-labelledby="about-title">
+    <div class="modal-card">
+      <h2 id="about-title">Occation Display</h2>
+      <p>ESP32-S3 HUB75 LED matrix display for customizable occasion scenes, animations, live clock, and weather.</p>
+      <p>&copy; Jeppe S. S&oslash;rensen 2026<br><a href="mailto:zolomail@gmail.com" style="color:var(--accent);">zolomail@gmail.com</a></p>
+      <div class="actions">
+        <button type="button" id="btn-about-close" class="btn btn-primary">Close</button>
+      </div>
+    </div>
+  </div>
+
   <div id="toast" class="toast" aria-live="polite"></div>
-  <script src="/app.js?v=4"></script>
+  <script src="/app.js?v=9"></script>
 </body>
 </html>
