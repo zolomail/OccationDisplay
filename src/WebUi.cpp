@@ -55,8 +55,9 @@ bool     show_ip          = true;
 bool     show_cpu         = true;
 bool     scene_dirty      = false;
 bool     reboot_pending   = false;
-uint16_t panel_chain      = 3;
-bool     prefs_loaded     = false;
+uint16_t panel_chain        = 3;
+uint16_t active_panel_chain = 3;
+bool     prefs_loaded       = false;
 SceneId  selected_scene   = SceneId::None;
 
 struct SceneOption {
@@ -309,6 +310,7 @@ esp_err_t handleRootHttp(httpd_req_t* req)
         panel_chain_html += ">" + String(p) + (p == 1 ? " Panel" : " Panels") + "</option>";
     }
 
+    const String display_size = String(active_panel_chain * 64) + "x32";
     const String html = renderTemplate("/web/index.html", {
         { "WIFI_ERROR_BLOCK",    wifi_err_block },
         { "WEATHER_TEXT",        weather_text },
@@ -316,6 +318,7 @@ esp_err_t handleRootHttp(httpd_req_t* req)
         { "SHOW_CPU_CHECKED",    show_cpu ? "checked" : "" },
         { "SHOW_IP_CHECKED",     show_ip ? "checked" : "" },
         { "PANEL_CHAIN_OPTIONS", panel_chain_html },
+        { "DISPLAY_SIZE",        display_size },
         { "WIFI_SSID",           htmlEscape(wifi_ssid) }
     });
 
@@ -588,7 +591,8 @@ void loadPrefsOnce()
     wifi_ssid     = prefs.getString("ssid", DEFAULT_SSID);
     wifi_password = prefs.getString("pass", DEFAULT_PASS);
     const uint16_t saved_chain = prefs.getUShort("panel_chain", 3);
-    panel_chain   = (saved_chain >= 1 && saved_chain <= 4) ? saved_chain : 3;
+    panel_chain        = (saved_chain >= 1 && saved_chain <= 4) ? saved_chain : 3;
+    active_panel_chain = panel_chain;
     prefs.end();
     prefs_loaded = true;
 }

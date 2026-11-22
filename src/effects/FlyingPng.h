@@ -53,6 +53,7 @@ public:
     void setStaticIdle(bool enable) { m_static_idle = enable; }
     bool wrapsAround() const { return m_wrap_around; }
     void setWrapAround(bool enable) { m_wrap_around = enable; }
+    void setPosition(int16_t x, int16_t y);
 
     // Direct static helpers to decode & draw a PNG onto any Adafruit_GFX display at (x, y)
     static bool draw(Adafruit_GFX &matrix, const char *filepath, int16_t x, int16_t y, bool use_transparency = true);

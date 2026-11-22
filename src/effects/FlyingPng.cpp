@@ -535,6 +535,12 @@ bool FlyingPng::decodeApngFromRam(const uint8_t *data, size_t size)
     return true;
 }
 
+void FlyingPng::setPosition(int16_t x, int16_t y)
+{
+    m_x = resolveX(x, m_width) << 4;
+    m_y = resolveY(y, m_height) << 4;
+}
+
 void FlyingPng::render()
 {
     if (!m_valid || m_frames.empty()) return;

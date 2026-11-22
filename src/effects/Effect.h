@@ -7,6 +7,7 @@
 #include "fonts/ZoloMicro.h"
 #include "fonts/Wide.h"
 #include "fonts/SpaceGroteskBold32.h"
+#include "fonts/InterMediumBold16.h"
 #include <Fonts/Org_01.h>
 #include <Fonts/TomThumb.h>
 #include <Fonts/Picopixel.h>
@@ -20,7 +21,8 @@ enum FontId : uint8_t {
 	PICOPIXEL_FONT  = 5, // Adafruit 3x5 proportional micro font
 	ZOLO_MICRO_FONT       = 6, // Custom 4x4 micro pixel font
 	WIDE_FONT             = 7, // Custom 5x5 single-width wide pixel font
-	SPACE_GROTESK_32_FONT = 8  // Space Grotesk Bold 32px
+	SPACE_GROTESK_32_FONT    = 8, // Space Grotesk Bold 32px
+	INTER_MEDIUM_BOLD_16_FONT = 9  // Inter SemiBold 16px
 };
 
 // Position anchors in int16_t space.
@@ -86,6 +88,9 @@ public:
 				break;
 			case SPACE_GROTESK_32_FONT:
 				m_matrix.setFont(&SpaceGroteskBold32);
+				break;
+			case INTER_MEDIUM_BOLD_16_FONT:
+				m_matrix.setFont(&InterMediumBold16);
 				break;
 			default:
 				m_matrix.setFont();

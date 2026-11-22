@@ -41,3 +41,5 @@ To upload data files:
 
     11: Dirty rectangel updating...(Fullscreen update every frame max out cpu)
     14: Make wifi retry connect after fail every 30 secs if a valid ssid / pwd exists
+
+    15: Show size of display in webUI

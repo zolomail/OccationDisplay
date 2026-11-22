@@ -5,7 +5,7 @@
 ScrollText::ScrollText(Adafruit_GFX &matrix, String text, int16_t y, int16_t dx, uint16_t color, uint8_t font) :
 	Effect(matrix),
 	m_text(text),
-	m_x(m_matrix.width()*SPEED_FACTOR),
+	m_x(0),
 	m_y(y),
 	m_initial_y(y),
 	m_dx(dx),
@@ -13,6 +13,13 @@ ScrollText::ScrollText(Adafruit_GFX &matrix, String text, int16_t y, int16_t dx,
 	m_font(font)
 {
 	setText(m_text);
+	if (m_dx > 0) {
+		m_x = -static_cast<int16_t>(m_width) * SPEED_FACTOR;
+	} else if (m_dx < 0) {
+		m_x = m_matrix.width() * SPEED_FACTOR;
+	} else {
+		m_x = 0;
+	}
 }
 
 void ScrollText::setText(String text)
@@ -37,15 +44,27 @@ void ScrollText::render()
 	m_matrix.setTextColor(m_color);
 
 	int16_t draw_x = m_x / SPEED_FACTOR;
-	while(draw_x < m_matrix.width())
-	{
-		m_matrix.setCursor(draw_x, m_y);
-		m_matrix.print(m_text.c_str());
-		draw_x += m_width;
-	}
-
-	m_x += m_dx;
-	if(m_x/SPEED_FACTOR + m_width <= 0){
-		m_x += m_width*SPEED_FACTOR;
+	if (m_dx > 0) {
+		while (draw_x + static_cast<int16_t>(m_width) > 0) {
+			if (draw_x < m_matrix.width()) {
+				m_matrix.setCursor(draw_x, m_y);
+				m_matrix.print(m_text.c_str());
+			}
+			draw_x -= m_width;
+		}
+		m_x += m_dx;
+		if (m_x / SPEED_FACTOR >= m_matrix.width()) {
+			m_x -= m_width * SPEED_FACTOR;
+		}
+	} else {
+		while (draw_x < m_matrix.width()) {
+			m_matrix.setCursor(draw_x, m_y);
+			m_matrix.print(m_text.c_str());
+			draw_x += m_width;
+		}
+		m_x += m_dx;
+		if (m_x / SPEED_FACTOR + static_cast<int16_t>(m_width) <= 0) {
+			m_x += m_width * SPEED_FACTOR;
+		}
 	}
 }

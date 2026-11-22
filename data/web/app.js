@@ -7,7 +7,8 @@ const FONTS = [
   [5, 'Picopixel (3x5)'],
   [6, 'Zolo Micro (4x4)'],
   [7, 'Wide (5x5)'],
-  [8, 'Space Grotesk Bold (32px)']
+  [8, 'Space Grotesk Bold (32px)'],
+  [9, 'Inter MediumBold (16px)']
 ];
 
 let toastTimer = null;
