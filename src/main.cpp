@@ -35,6 +35,7 @@
 #include "effects/QrCode.h"
 #include "effects/Border.h"
 #include "effects/GolfHoleInOne.h"
+#include "effects/SDFEffect.h"
 
 namespace {
 // =========================================================================
@@ -332,11 +333,22 @@ std::unique_ptr<Scene> createScene(SceneId id, MatrixPanel_I2S_DMA &display)
             scene->add_effect<BubblesInt>(static_cast<uint8_t>(scene->number("Bubbles", 8, 1, 50)));
             break;
 
-        case SceneId::Test4:
+        case SceneId::SDFTest: {
+            static constexpr const SdfAtlas* SDF_ATLASES[] = {
+                &SDF_STAR, &SDF_SHAMROCK, &SDF_DIAMOND, &SDF_HEART
+            };
+            const uint8_t atlas_idx = scene->select("Atlas", 0, {
+                "Star", "Shamrock", "Diamond", "Heart"
+            });
+            const SdfAtlas& atlas = *SDF_ATLASES[atlas_idx < 4 ? atlas_idx : 0];
+            const uint16_t color = scene->color("Color", Colors::YELLOW);
+            const float scale = static_cast<float>(scene->number("Scale (%)", 100, 25, 200)) / 100.0f;
+            const float spin = static_cast<float>(scene->number("Spin Speed", 2, -15, 15));
+            const float outline = static_cast<float>(scene->number("Outline (x0.5px)", 3, 0, 12)) * 0.5f;
             scene->add_effect<ClearScreen>();
-            scene->add_effect<Border>(2, scene->color("Border Color 1", Colors::YELLOW), scene->color("Border Color 2", Colors::PURPLE), BorderPattern::Twinkle, 3, 2);
-            scene->add_effect<FlyingText>(scene->text("Label Text", "Test 4: Twinkle"), XPOS_CENTER, YPOS_CENTER, 0, 0, scene->color("Text Color", Colors::WHITE), scene->font("Text Font", TINY_WIDE_FONT));
+            scene->add_effect<SDFEffect>(atlas, color, XPOS_CENTER, YPOS_CENTER, scale, 0.0f, spin, 0, 0, outline);
             break;
+        }
 
         case SceneId::Test5:
             scene->add_effect<ClearScreen>();

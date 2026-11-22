@@ -82,7 +82,7 @@ constexpr SceneOption SCENE_OPTIONS[] = {
     { SceneId::BorderTest,       "Border Test"      },
     { SceneId::ScrollerTest,     "Scroller Test"    },
     { SceneId::TestAnimatedPng,  "Animated PNG"     },
-    { SceneId::Test4,            "Test 4"           },
+    { SceneId::SDFTest,          "SDF Test"         },
     { SceneId::Test5,            "Test 5"           },
     { SceneId::TrackmanTM5Beta,  "TrackmanTM5Beta"  }
     

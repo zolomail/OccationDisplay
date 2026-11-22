@@ -31,7 +31,7 @@ enum class SceneId : uint8_t {
 	BorderTest,
 	ScrollerTest,
 	TestAnimatedPng,
-	Test4,
+	SDFTest,
 	Test5,
 	TrackmanTM5Beta,
 	None	// Must be last

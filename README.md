@@ -36,8 +36,8 @@ To upload data files:
         Wedding days
         Is it friday?
 
-    9: Allow setting outline color for for Hearts and Bubbles 
-    11: Dirty rectangel updating...(Fullscreen update every frame max out cpu)
-
-    14: Make wifi retry connect after fail every 30 secs if a valid ssid / pwd exists
     15: Add configuration for all of the effects 
+    9: Allow setting outline color for for Hearts and Bubbles 
+
+    11: Dirty rectangel updating...(Fullscreen update every frame max out cpu)
+    14: Make wifi retry connect after fail every 30 secs if a valid ssid / pwd exists
