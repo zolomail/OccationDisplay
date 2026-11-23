@@ -41,3 +41,11 @@ To upload data files:
 
     11: Dirty rectangel updating...(Fullscreen update every frame max out cpu)
     14: Make wifi retry connect after fail every 30 secs if a valid ssid / pwd exists
+    15: Fix "showing new years eve" when no date time
+    16: Use dual wifi mode and try connecting to wifi when valid ssid and pwd exists
+    17: Add brightness aadjustment in debug
+    18: Allow calibrating panels individually
+    19: Change "Couldn't connect" etc font so it doesn't spill outside display whehn connect failed
+
+Done:
+    20: Zolomicro missing lowercase
