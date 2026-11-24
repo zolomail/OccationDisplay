@@ -69,9 +69,14 @@
           <input type="checkbox" id="show_ip" {{SHOW_IP_CHECKED}}>
         </label>
         <div class="field" style="margin-top:12px;">
+          <label for="brightness">Brightness (<span id="brightness-val">{{BRIGHTNESS}}</span>)</label>
+          <input type="range" id="brightness" min="1" max="255" value="{{BRIGHTNESS}}">
+        </div>
+        <div class="field" style="margin-top:12px;">
           <label for="panel_chain">Connected Panels (Reset to apply)</label>
           <select id="panel_chain">{{PANEL_CHAIN_OPTIONS}}</select>
         </div>
+        {{PANEL_CAL_HTML}}
         <div class="actions">
           <button type="button" id="btn-reboot" class="btn btn-secondary">Reset Display</button>
         </div>

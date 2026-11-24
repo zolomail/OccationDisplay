@@ -2,6 +2,7 @@
 
 #include <Arduino.h>
 #include "Scene.h"
+#include "FastHub75.h"
 
 namespace WebUi {
 
@@ -14,6 +15,8 @@ SceneId  selectedScene();
 bool     showIp();
 bool     showCpuLoad();
 uint16_t panelChain();
+uint8_t  brightness();
+const PanelCalibration* panelCalibrations();
 bool     consumeSceneDirty();
 
 const String& wifiError();

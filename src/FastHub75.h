@@ -3,6 +3,12 @@
 #include <Arduino.h>
 #include <ESP32-HUB75-MatrixPanel-I2S-DMA.h>
 
+struct PanelCalibration {
+    uint8_t r{100};
+    uint8_t g{100};
+    uint8_t b{100};
+};
+
 class FastHub75
 {
 public:
@@ -18,5 +24,14 @@ public:
         int16_t w,
         int16_t h,
         bool use_transparency
+    );
+
+    // Apply per-panel R/G/B gain (0..100%) in-place on the DMA back buffer.
+    // Skips any panel where r == 100 && g == 100 && b == 100.
+    static void applyPanelCalibration(
+        MatrixPanel_I2S_DMA &panel,
+        const PanelCalibration *cal,
+        size_t panel_count,
+        uint16_t panel_res_x = 64
     );
 };

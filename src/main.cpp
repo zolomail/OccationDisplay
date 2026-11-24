@@ -499,7 +499,7 @@ void setup()
 
     dma_display.reset(new MatrixPanel_I2S_DMA(mxconfig));
     dma_display->begin();
-    dma_display->setBrightness8(Config::BRIGHTNESS);
+    dma_display->setBrightness8(WebUi::brightness());
     dma_display->fillScreen(Colors::BLACK);
 
     if (psramFound()) {
@@ -672,6 +672,20 @@ void loop()
         dma_display->drawFastVLine(dma_display->width() - 1, 0, dma_display->height(), Colors::BLACK);
         --clear_cpu_frames;
     }
+
+    static uint8_t prev_brightness = WebUi::brightness();
+    const uint8_t  cur_brightness  = WebUi::brightness();
+    if (cur_brightness != prev_brightness) {
+        prev_brightness = cur_brightness;
+        dma_display->setBrightness8(cur_brightness);
+    }
+
+    FastHub75::applyPanelCalibration(
+        *dma_display,
+        WebUi::panelCalibrations(),
+        static_cast<size_t>(dma_display->width() / Config::PANEL_RES_X),
+        Config::PANEL_RES_X
+    );
 
     dma_display->flipDMABuffer();
     WebUi::handleClient();

@@ -9,24 +9,24 @@ To upload data files:
 
 
 #TODO:
-    2:  Add user configurable scenes (replace selectDateScene ) the following should be specified:
+    - Add user configurable scenes (replace selectDateScene ) the following should be specified:
         which scene
         start: month, day, hour
         end:   month, day, hour
         input: scroll or bounce texts ("Merry Christmas", "Happy Newyear", )
                 Year of birth, for calculating age for birthdays
                 Colors / fonts
-    5:  Custom scenes where you can select one background effect (clearScreen, flames, wavesim, Bumpmap ) and up to 5 additional (other effects)
-    15: Daily/Weekly Reminders (weekend/bedtime)?
-    6: Show events from calendar (eg google calendar)
+    - Custom scenes where you can select one background effect (clearScreen, flames, wavesim, Bumpmap ) and up to 5 additional (other effects)
+    - Daily/Weekly Reminders (weekend/bedtime)?
+    - Show events from calendar (eg google calendar)
 
 
-    3: More effects:
+    - More effects:
         Animated sprites (fish, birds)
         Christmas tree
         Stars warpspace
 
-    4: More Scenes
+    - More Scenes
         Full screen weather
         Easter
         Saint Patrics
@@ -36,16 +36,30 @@ To upload data files:
         Wedding days
         Is it friday?
 
-    15: Add configuration for all of the effects 
-    9: Allow setting outline color for for Hearts and Bubbles 
+    - Add configuration for all of the effects 
+    - Allow setting outline color for for Hearts and Bubbles 
 
-    11: Dirty rectangel updating...(Fullscreen update every frame max out cpu)
-    14: Make wifi retry connect after fail every 30 secs if a valid ssid / pwd exists
-    15: Fix "showing new years eve" when no date time
-    16: Use dual wifi mode and try connecting to wifi when valid ssid and pwd exists
-    17: Add brightness aadjustment in debug
-    18: Allow calibrating panels individually
-    19: Change "Couldn't connect" etc font so it doesn't spill outside display whehn connect failed
+    - Dirty rectangel updating...(Fullscreen update every frame max out cpu)
+    - Make wifi retry connect after fail every 30 secs if a valid ssid / pwd exists
+    - Fix "showing new years eve" when no date time
+    - Use dual wifi mode and try connecting to wifi when valid ssid and pwd exists
+    - Change "Couldn't connect" etc font so it doesn't spill outside display whehn connect failed
 
 Done:
-    20: Zolomicro missing lowercase
+    Figure out how we incorporate weather...
+    Full border
+    On the webUi make it so when selecting a scene to show the user should be able to configure the parameters (Scroll text(s), Scroll position and speed, Colors, Fonts, etc.)
+    Add moon cycly to weather icon (at night)
+    When not being able to connect to WIfi show QR code for the WIFi AP ESP32 provides..and the IP to connect to
+    Move x,y alignment into Effect.h and make enum to define magic numbers eg 0x7FF0 .. 0x7FFF for XPOS_CENTER, XPOS_1_QUART XPOS_3_QUART XPOS_RIGHT (width of display -1)
+    Golf player on grass standing on right side and flag and hole on the right side (tracman logo scrolling in background and countdown to beta)
+    Add CPU load debug info bar on right side of display (from bottom to top indicating how loaded the cpu is)
+    Fix snow piling up on the left side of the display
+    WebUi should get font list from enum in Effects.h
+    Move web templates out into filesystem
+    Add countdown argument to showtime so it will show days, hours, minutes and seconds to a specified date (no year)
+    Show size of display in webUI
+    Add a memory bar right next to the cpu bar add a bar that shows memory used vs total
+    Zolomicro missing lowercase
+    Allow calibrating panels individually
+    Add brightness aadjustment in debug

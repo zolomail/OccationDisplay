@@ -108,14 +108,20 @@ function loadSceneConfig() {
 }
 
 function updateOptions() {
-  const params = 'scene_id=' + encodeURIComponent(document.getElementById('scene_id').value) +
-                 '&show_ip=' + (document.getElementById('show_ip').checked ? '1' : '0') +
-                 '&show_cpu=' + (document.getElementById('show_cpu').checked ? '1' : '0') +
-                 '&panel_chain=' + encodeURIComponent(document.getElementById('panel_chain').value);
+  const parts = [
+    'scene_id=' + encodeURIComponent(document.getElementById('scene_id').value),
+    'show_ip=' + (document.getElementById('show_ip').checked ? '1' : '0'),
+    'show_cpu=' + (document.getElementById('show_cpu').checked ? '1' : '0'),
+    'panel_chain=' + encodeURIComponent(document.getElementById('panel_chain').value),
+    'brightness=' + encodeURIComponent(document.getElementById('brightness').value)
+  ];
+  document.querySelectorAll('.pcal').forEach(el => {
+    parts.push('p' + el.dataset.p + '_' + el.dataset.c + '=' + encodeURIComponent(el.value));
+  });
   return fetch('/options', {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: params
+    body: parts.join('&')
   });
 }
 
@@ -133,6 +139,21 @@ document.getElementById('show_ip').addEventListener('change', () => {
 
 document.getElementById('panel_chain').addEventListener('change', () => {
   updateOptions().then(() => showToast('Saved (reset to apply)'));
+});
+
+const brtEl = document.getElementById('brightness');
+const brtVal = document.getElementById('brightness-val');
+brtEl.addEventListener('input', () => {
+  brtVal.textContent = brtEl.value;
+});
+brtEl.addEventListener('change', () => {
+  updateOptions().then(() => showToast('Brightness updated'));
+});
+
+document.querySelectorAll('.pcal').forEach(el => {
+  el.addEventListener('change', () => {
+    updateOptions().then(() => showToast('Calibration updated'));
+  });
 });
 
 document.getElementById('btn-reboot').addEventListener('click', () => {

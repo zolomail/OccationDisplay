@@ -57,6 +57,8 @@ bool     scene_dirty      = false;
 bool     reboot_pending   = false;
 uint16_t panel_chain        = 3;
 uint16_t active_panel_chain = 3;
+uint8_t  display_brightness = 32;
+PanelCalibration panel_cal[4];
 bool     prefs_loaded       = false;
 SceneId  selected_scene   = SceneId::None;
 
@@ -310,6 +312,18 @@ esp_err_t handleRootHttp(httpd_req_t* req)
         panel_chain_html += ">" + String(p) + (p == 1 ? " Panel" : " Panels") + "</option>";
     }
 
+    String panel_cal_html;
+    for (uint16_t i = 0; i < active_panel_chain && i < 4; ++i) {
+        const String p = String(i);
+        panel_cal_html += "<div class=\"field\" style=\"margin-top:10px;\">";
+        panel_cal_html += "<label>Panel " + String(i + 1) + " RGB (%)</label>";
+        panel_cal_html += "<div style=\"display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;\">";
+        panel_cal_html += "<input type=\"number\" class=\"pcal\" data-p=\"" + p + "\" data-c=\"r\" min=\"0\" max=\"100\" value=\"" + String(panel_cal[i].r) + "\" aria-label=\"Panel " + String(i + 1) + " Red %\">";
+        panel_cal_html += "<input type=\"number\" class=\"pcal\" data-p=\"" + p + "\" data-c=\"g\" min=\"0\" max=\"100\" value=\"" + String(panel_cal[i].g) + "\" aria-label=\"Panel " + String(i + 1) + " Green %\">";
+        panel_cal_html += "<input type=\"number\" class=\"pcal\" data-p=\"" + p + "\" data-c=\"b\" min=\"0\" max=\"100\" value=\"" + String(panel_cal[i].b) + "\" aria-label=\"Panel " + String(i + 1) + " Blue %\">";
+        panel_cal_html += "</div></div>";
+    }
+
     const String display_size = String(active_panel_chain * 64) + "x32";
     const String html = renderTemplate("/web/index.html", {
         { "WIFI_ERROR_BLOCK",    wifi_err_block },
@@ -318,6 +332,8 @@ esp_err_t handleRootHttp(httpd_req_t* req)
         { "SHOW_CPU_CHECKED",    show_cpu ? "checked" : "" },
         { "SHOW_IP_CHECKED",     show_ip ? "checked" : "" },
         { "PANEL_CHAIN_OPTIONS", panel_chain_html },
+        { "BRIGHTNESS",          String(display_brightness) },
+        { "PANEL_CAL_HTML",      panel_cal_html },
         { "DISPLAY_SIZE",        display_size },
         { "WIFI_SSID",           htmlEscape(wifi_ssid) }
     });
@@ -362,6 +378,40 @@ esp_err_t handleOptionsHttp(httpd_req_t* req)
                 prefs.end();
             }
         }
+    }
+    if (getFormArg(body, "brightness", val)) {
+        const int b = constrain(val.toInt(), 1, 255);
+        const uint8_t next = static_cast<uint8_t>(b);
+        if (next != display_brightness) {
+            display_brightness = next;
+            prefs.begin(PREFS_NS, false);
+            prefs.putUChar("brightness", display_brightness);
+            prefs.end();
+        }
+    }
+    bool cal_changed = false;
+    for (uint16_t i = 0; i < 4; ++i) {
+        const char* keys[3] = { "r", "g", "b" };
+        uint8_t* ptrs[3] = { &panel_cal[i].r, &panel_cal[i].g, &panel_cal[i].b };
+        for (int c = 0; c < 3; ++c) {
+            const String arg = "p" + String(i) + "_" + keys[c];
+            if (getFormArg(body, arg.c_str(), val)) {
+                const uint8_t next = static_cast<uint8_t>(constrain(val.toInt(), 0, 100));
+                if (next != *ptrs[c]) {
+                    *ptrs[c] = next;
+                    cal_changed = true;
+                }
+            }
+        }
+    }
+    if (cal_changed) {
+        prefs.begin(PREFS_NS, false);
+        for (uint16_t i = 0; i < 4; ++i) {
+            prefs.putUChar(("p" + String(i) + "_r").c_str(), panel_cal[i].r);
+            prefs.putUChar(("p" + String(i) + "_g").c_str(), panel_cal[i].g);
+            prefs.putUChar(("p" + String(i) + "_b").c_str(), panel_cal[i].b);
+        }
+        prefs.end();
     }
 
     httpd_resp_set_type(req, "text/plain");
@@ -593,6 +643,13 @@ void loadPrefsOnce()
     const uint16_t saved_chain = prefs.getUShort("panel_chain", 3);
     panel_chain        = (saved_chain >= 1 && saved_chain <= 4) ? saved_chain : 3;
     active_panel_chain = panel_chain;
+    const uint8_t saved_brt = prefs.getUChar("brightness", 32);
+    display_brightness = (saved_brt >= 1) ? saved_brt : 32;
+    for (uint16_t i = 0; i < 4; ++i) {
+        panel_cal[i].r = std::min<uint8_t>(100, prefs.getUChar(("p" + String(i) + "_r").c_str(), 100));
+        panel_cal[i].g = std::min<uint8_t>(100, prefs.getUChar(("p" + String(i) + "_g").c_str(), 100));
+        panel_cal[i].b = std::min<uint8_t>(100, prefs.getUChar(("p" + String(i) + "_b").c_str(), 100));
+    }
     prefs.end();
     prefs_loaded = true;
 }
@@ -663,6 +720,8 @@ SceneId selectedScene()    { return selected_scene; }
 bool showIp()              { return show_ip; }
 bool showCpuLoad()         { return show_cpu; }
 uint16_t panelChain()      { loadPrefsOnce(); return panel_chain; }
+uint8_t brightness()       { loadPrefsOnce(); return display_brightness; }
+const PanelCalibration* panelCalibrations() { loadPrefsOnce(); return panel_cal; }
 bool consumeSceneDirty()   { const bool d = scene_dirty; scene_dirty = false; return d; }
 const String& wifiError()  { return wifi_err; }
 const char* apSsid()       { return AP_SSID; }
