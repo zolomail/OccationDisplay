@@ -9,6 +9,7 @@ To upload data files:
 
 
 #TODO:
+    EFFECTS AND OCCATION PLANNING
     - Add user configurable scenes (replace selectDateScene ) the following should be specified:
         which scene
         start: month, day, hour
@@ -19,7 +20,7 @@ To upload data files:
     - Custom scenes where you can select one background effect (clearScreen, flames, wavesim, Bumpmap ) and up to 5 additional (other effects)
     - Daily/Weekly Reminders (weekend/bedtime)?
     - Show events from calendar (eg google calendar)
-
+    - Add configuration for all of the effects 
 
     - More effects:
         Animated sprites (fish, birds)
@@ -36,13 +37,14 @@ To upload data files:
         Wedding days
         Is it friday?
 
-    - Add configuration for all of the effects 
     - Allow setting outline color for for Hearts and Bubbles 
 
     - Dirty rectangel updating...(Fullscreen update every frame max out cpu)
-    - Make wifi retry connect after fail every 30 secs if a valid ssid / pwd exists
-    - Use dual wifi mode and try connecting to wifi when valid ssid and pwd exists
     - Change "Couldn't connect" etc font so it doesn't spill outside display whehn connect failed
+
+    - Use dual wifi mode and try connecting to wifi when valid ssid and pwd exists
+    - Make wifi retry connect after fail every 30 secs if a valid ssid / pwd exists
+    
 
 Done:
     - Figure out how we incorporate weather...
