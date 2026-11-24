@@ -642,8 +642,10 @@ void loop()
     } else {
         const time_t now = time(nullptr);
         localtime_r(&now, &current_time);
-        const SceneId override_id = WebUi::selectedScene();
-        renderScene((override_id != SceneId::None) ? override_id : selectDateScene(current_time));
+        const bool    has_valid_time = (current_time.tm_year >= 120);
+        const SceneId override_id    = WebUi::selectedScene();
+        const SceneId auto_id        = has_valid_time ? selectDateScene(current_time) : SceneId::Welcome;
+        renderScene((override_id != SceneId::None) ? override_id : auto_id);
 
         if (WebUi::showIp()) {
             const IPAddress ip = WiFi.localIP();
