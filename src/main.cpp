@@ -121,7 +121,7 @@ std::unique_ptr<Scene> createScene(SceneId id, MatrixPanel_I2S_DMA &display)
             break;
 
         case SceneId::Welcome:
-            scene->add_effect<ClearScreen>();
+            scene->add_effect<ClearScreen>(scene->color("Background Color", Colors::BLACK));
             scene->add_effect<Border>(2, Colors::WHITE, Colors::BLUE, BorderPattern::Dashed, 4, 1);
             scene->add_effect<FlyingText>("-OCCATION DISPLAY-", XPOS_CENTER, YPOS_CENTER, 0, 0, Colors::RED);
             break;
@@ -159,7 +159,7 @@ std::unique_ptr<Scene> createScene(SceneId id, MatrixPanel_I2S_DMA &display)
         }
 
         case SceneId::FlamingHot:
-            scene->add_effect<ClearScreen>();
+            scene->add_effect<ClearScreen>(scene->color("Background Color", Colors::BLACK));
             scene->add_effect<Flames>(5);
             break;
 
@@ -182,7 +182,7 @@ std::unique_ptr<Scene> createScene(SceneId id, MatrixPanel_I2S_DMA &display)
             break;
 
         case SceneId::Test:
-            scene->add_effect<ClearScreen>();
+            scene->add_effect<ClearScreen>(scene->color("Background Color", Colors::BLACK));
             scene->add_effect<Stars>();
             scene->add_effect<FunkyLine>(0, 3, color565(255, 0, 0));
             scene->add_effect<FunkyLine>(5, 3, color565(255, 100, 0));
@@ -207,46 +207,46 @@ std::unique_ptr<Scene> createScene(SceneId id, MatrixPanel_I2S_DMA &display)
             break;
 
         case SceneId::NormalDays:
-            scene->add_effect<ClearScreen>();
+            scene->add_effect<ClearScreen>(scene->color("Background Color", Colors::BLACK));
             scene->add_effect<ScrollText>(scene->text("Scroll Text", Config::DEFAULT_SCROLL), YPOS_BOTTOM, -10, scene->color("Scroll Color", Colors::RED), scene->font("Scroll Font", TINY_WIDE_FONT));
             scene->add_effect<ShowTime>(current_time, XPOS_CENTER, YPOS_CENTER, 0, 0, scene->color("Clock Color", Colors::BLUE), scene->font("Clock Font", NORMAL_FONT), "yyyy-mm-dd hh:mm:ss");
             scene->add_effect<WeatherOverlay>(XPOS_CENTER, 0, scene->color("Weather Color", Colors::CYAN));
             break;
 
         case SceneId::JustSnow:
-            scene->add_effect<ClearScreen>();
+            scene->add_effect<ClearScreen>(scene->color("Background Color", Colors::BLACK));
             scene->add_effect<ScrollText>(scene->text("Scroll Text", Config::DEFAULT_SCROLL), YPOS_CENTER, -10, scene->color("Scroll Color", Colors::RED), scene->font("Scroll Font", TINY_WIDE_FONT));
             scene->add_effect<SnowScape>(static_cast<uint8_t>(scene->number("Snow Flakes", 50, 0, 200)), static_cast<int16_t>(scene->number("Snow Height", 10, 1, 31)));
             scene->add_effect<WeatherOverlay>(XPOS_RIGHT, 0, scene->color("Weather Color", Colors::CYAN));
             break;
 
         case SceneId::Aquatic:
-            scene->add_effect<ClearScreen>();
+            scene->add_effect<ClearScreen>(scene->color("Background Color", Colors::BLACK));
             scene->add_effect<ShowTime>(current_time, XPOS_CENTER, YPOS_CENTER, 0, 0, scene->color("Clock Color", Colors::ORANGE), scene->font("Clock Font", TINY_WIDE_FONT), "yyyy-mm-dd hh:mm:ss");
             scene->add_effect<BubblesInt>(static_cast<uint8_t>(scene->number("Bubbles", 16, 1, 100)));
             break;
 
         case SceneId::ValentinesDay:
-            scene->add_effect<ClearScreen>();
+            scene->add_effect<ClearScreen>(scene->color("Background Color", Colors::BLACK));
             scene->add_effect<Hearts>(static_cast<uint8_t>(scene->number("Hearts", 16, 1, 100)));
             scene->add_effect<ShowTime>(current_time, XPOS_CENTER, YPOS_1_QUART, 0, 0, scene->color("Clock Color", Colors::PURPLE), scene->font("Clock Font", TINY_WIDE_FONT), "yyyy-mm-dd hh:mm:ss");
             scene->add_effect<ScrollText>(scene->text("Scroll Text", Config::DEFAULT_SCROLL), YPOS_3_QUART, -10, scene->color("Scroll Color", Colors::RED), scene->font("Scroll Font", TINY_WIDE_FONT));
             break;
 
         case SceneId::CubeEffect:
-            scene->add_effect<ClearScreen>();
+            scene->add_effect<ClearScreen>(scene->color("Background Color", Colors::BLACK));
             scene->add_effect<Stars>(25);
             scene->add_effect<Cube3D>(8.5f, false);
             break;
 
         case SceneId::ChristmasDays:
-            scene->add_effect<ClearScreen>();
+            scene->add_effect<ClearScreen>(scene->color("Background Color", Colors::BLACK));
             scene->add_effect<SnowScape>(static_cast<uint8_t>(scene->number("Snow Flakes", 20, 0, 200)), static_cast<int16_t>(scene->number("Snow Height", 8, 1, 31)));
             scene->add_effect<ShowTime>(current_time, XPOS_CENTER, YPOS_CENTER, 0, 0, scene->color("Clock Color", Colors::BLUE), scene->font("Clock Font", NORMAL_FONT), "yyyy-mm-dd hh:mm:ss");
             break;
 
         case SceneId::ChristmasEve:
-            scene->add_effect<ClearScreen>();
+            scene->add_effect<ClearScreen>(scene->color("Background Color", Colors::BLACK));
             scene->add_effect<Present>(-20, 5, 5, Colors::GREEN, Colors::RED);
             scene->add_effect<Present>(-10, 7, 3, Colors::CYAN, Colors::RED);
             scene->add_effect<Present>(-15, 7, 5, Colors::WHITE, Colors::YELLOW);
@@ -257,7 +257,7 @@ std::unique_ptr<Scene> createScene(SceneId id, MatrixPanel_I2S_DMA &display)
             break;
 
         case SceneId::JanuaryDays:
-            scene->add_effect<ClearScreen>();
+            scene->add_effect<ClearScreen>(scene->color("Background Color", Colors::BLACK));
             scene->add_effect<Stars>(30);
             scene->add_effect<ShootingStar>(-1000);
             scene->add_effect<SnowScape>(static_cast<uint8_t>(scene->number("Snow Flakes", 20, 0, 200)), static_cast<int16_t>(scene->number("Snow Height", 4, 1, 31)));
@@ -267,7 +267,7 @@ std::unique_ptr<Scene> createScene(SceneId id, MatrixPanel_I2S_DMA &display)
             break;
 
         case SceneId::Halloween:
-            scene->add_effect<ClearScreen>();
+            scene->add_effect<ClearScreen>(scene->color("Background Color", Colors::BLACK));
             scene->add_effect<ShowTime>(current_time, XPOS_CENTER, 27, 0, 0, scene->color("Clock Color", Colors::RED), scene->font("Clock Font", TINY_WIDE_FONT), "yyyy-mm-dd hh:mm:ss");
             scene->add_effect<ScrollText>(scene->text("Scroll Text", "!!!HAPPY HALLOWEEN!!! --- \x81\x81\x81 --- "), YPOS_CENTER, -10, scene->color("Scroll Color", Colors::ORANGE), scene->font("Scroll Font", TINY_WIDE_FONT));
             scene->add_effect<FlyingPng>("/bitmaps/pumpkin.png", XPOS_CENTER, YPOS_CENTER, 16, 8);
@@ -278,7 +278,7 @@ std::unique_ptr<Scene> createScene(SceneId id, MatrixPanel_I2S_DMA &display)
 
         case SceneId::Birthday: {
             const int age = current_year - scene->number("Birth Year", 2016, 1900, 2100);
-            scene->add_effect<ClearScreen>();
+            scene->add_effect<ClearScreen>(scene->color("Background Color", Colors::BLACK));
             scene->add_effect<SnowScape>(static_cast<uint8_t>(scene->number("Snow Flakes", 20, 0, 200)), static_cast<int16_t>(scene->number("Snow Height", 8, 1, 31)));
             scene->add_effect<Present>(-20, 5, 5, Colors::GREEN, Colors::RED);
             scene->add_effect<Present>(-10, 7, 3, Colors::CYAN, Colors::RED);
@@ -291,7 +291,7 @@ std::unique_ptr<Scene> createScene(SceneId id, MatrixPanel_I2S_DMA &display)
         }
 
         case SceneId::NewYearsDay:
-            scene->add_effect<ClearScreen>();
+            scene->add_effect<ClearScreen>(scene->color("Background Color", Colors::BLACK));
             scene->add_effect<Stars>();
             scene->add_effect<FireWorks>();
             scene->add_effect<FlyingText>(scene->text("Message", "Happy New Year"), XPOS_CENTER, YPOS_1_QUART, 0, 0, scene->color("Message Color", Colors::BLUE), scene->font("Message Font", NORMAL_FONT));
@@ -300,7 +300,7 @@ std::unique_ptr<Scene> createScene(SceneId id, MatrixPanel_I2S_DMA &display)
             break;
 
         case SceneId::NewYearsMidnight:
-            scene->add_effect<ClearScreen>();
+            scene->add_effect<ClearScreen>(scene->color("Background Color", Colors::BLACK));
             scene->add_effect<Stars>();
             scene->add_effect<FlyingPng>("/bitmaps/champagne.png", XPOS_CENTER, YPOS_CENTER);
             scene->add_effect<FireWorks>(-200);
@@ -314,19 +314,19 @@ std::unique_ptr<Scene> createScene(SceneId id, MatrixPanel_I2S_DMA &display)
             const uint8_t pattern_idx = scene->select("Border Type", static_cast<uint8_t>(BorderPattern::Solid), {
                 "Solid", "Dashed", "Chase", "Twinkle", "Rainbow"
             });
-            scene->add_effect<ClearScreen>();
+            scene->add_effect<ClearScreen>(scene->color("Background Color", Colors::BLACK));
             scene->add_effect<Border>(static_cast<uint8_t>(scene->number("Thickness", 2, 1, 8)), scene->color("Border Color 1", Colors::RED), scene->color("Border Color 2", Colors::YELLOW), static_cast<BorderPattern>(pattern_idx), static_cast<uint8_t>(scene->number("Stripe Length", 4, 1, 32)), static_cast<int8_t>(scene->number("Speed", 2, -16, 16)));
             scene->add_effect<FlyingText>(scene->text("Label Text", "Border Test"), XPOS_CENTER, YPOS_CENTER, 0, 0, scene->color("Text Color", Colors::WHITE), scene->font("Text Font", TINY_WIDE_FONT));
             break;
         }
 
         case SceneId::ScrollerTest:
-            scene->add_effect<ClearScreen>();
+            scene->add_effect<ClearScreen>(scene->color("Background Color", Colors::BLACK));
             scene->add_effect<ScrollText>(scene->text("Scroll Text", Config::DEFAULT_SCROLL), YPOS_CENTER, static_cast<int16_t>(scene->number("Scroll Speed", -10, -50, 50)), scene->color("Scroll Color", Colors::GREY), scene->font("Scroll Font", SPACE_GROTESK_32_FONT));
             break;
 
         case SceneId::TestAnimatedPng:
-            scene->add_effect<ClearScreen>(0, 14, 28);
+            scene->add_effect<ClearScreen>(scene->color("Background Color", color565(0, 14, 28)));
             scene->add_effect<FlyingPng>("/bitmaps/koi.png", XPOS_CENTER, YPOS_2_THIRD, 9, -3, true, false, true);
             scene->add_effect<FlyingPng>("/bitmaps/koi.png", XPOS_CENTER, YPOS_CENTER, 7, 1, true, false, true);
             scene->add_effect<FlyingPng>("/bitmaps/koi.png", XPOS_1_QUART, YPOS_1_THIRD, 8, 2, true, false, true);
@@ -345,7 +345,7 @@ std::unique_ptr<Scene> createScene(SceneId id, MatrixPanel_I2S_DMA &display)
             const float scale = static_cast<float>(scene->number("Scale (%)", 100, 25, 200)) / 100.0f;
             const float spin = static_cast<float>(scene->number("Spin Speed", 2, -15, 15));
             const float outline = static_cast<float>(scene->number("Outline (x0.5px)", 3, 0, 12)) * 0.5f;
-            scene->add_effect<ClearScreen>();
+            scene->add_effect<ClearScreen>(scene->color("Background Color", Colors::BLACK));
             scene->add_effect<SDFEffect>(atlas, color, XPOS_CENTER, YPOS_CENTER, scale, 0.0f, spin, 0, 0, outline);
             scene->add_effect<SDFEffect>(SDF_STAR, Colors::YELLOW, XPOS_1_QUART, YPOS_CENTER, scale, 0.0f, spin, 7, 3, outline);
             scene->add_effect<SDFEffect>(SDF_HEART, Colors::RED, XPOS_3_QUART, YPOS_CENTER, scale, 0.0f, spin, -9, -3, outline);
@@ -354,7 +354,7 @@ std::unique_ptr<Scene> createScene(SceneId id, MatrixPanel_I2S_DMA &display)
         }
 
         case SceneId::Test5:
-            scene->add_effect<ClearScreen>();
+            scene->add_effect<ClearScreen>(scene->color("Background Color", Colors::BLACK));
             scene->add_effect<Border>(2, scene->color("Border Color 1", Colors::WHITE), scene->color("Border Color 2", Colors::BLACK), BorderPattern::Rainbow, 4, 3);
             scene->add_effect<FlyingText>(scene->text("Label Text", "Test 5: Rainbow"), XPOS_CENTER, YPOS_CENTER, 0, 0, scene->color("Text Color", Colors::WHITE), scene->font("Text Font", TINY_WIDE_FONT));
             break;
