@@ -62,7 +62,7 @@ public:
 private:
     struct Frame {
         std::vector<uint16_t> rgb;
-        std::vector<uint8_t>  mask;
+        std::vector<uint8_t>  alpha;
         uint32_t              delay_ms{100};
     };
 

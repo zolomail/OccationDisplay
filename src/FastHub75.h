@@ -26,6 +26,17 @@ public:
         bool use_transparency
     );
 
+    // Fast row-buffered direct DMA blitter for 16-bit RGB565 bitmaps with 8-bit per-pixel alpha (0..255).
+    static void drawRGBABitmap(
+        MatrixPanel_I2S_DMA &panel,
+        int16_t x,
+        int16_t y,
+        const uint16_t *bitmap,
+        const uint8_t *alpha,
+        int16_t w,
+        int16_t h
+    );
+
     // Apply per-panel R/G/B gain (0..100%) in-place on the DMA back buffer.
     // Skips any panel where r == 100 && g == 100 && b == 100.
     static void applyPanelCalibration(

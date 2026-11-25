@@ -13,7 +13,7 @@ struct DecodeContext {
     int width;
     int height;
     std::vector<uint16_t> *rgb;
-    std::vector<uint8_t>  *mask; // Can be nullptr if not needed
+    std::vector<uint8_t>  *alpha; // 8-bit alpha per pixel (nullptr if not needed)
     bool has_alpha;
     PNG *png;
 };
@@ -26,7 +26,7 @@ void pngDrawCallback(PNGDRAW *pDraw)
 
     const int w = pDraw->iWidth;
     const int row_bytes = (ctx->width + 7) / 8;
-    const bool build_mask = (ctx->mask != nullptr);
+    const bool build_alpha = (ctx->alpha != nullptr);
 
     if (pDraw->iPixelType == PNG_PIXEL_TRUECOLOR_ALPHA) {
         const uint8_t *src = pDraw->pPixels;
@@ -37,14 +37,12 @@ void pngDrawCallback(PNGDRAW *pDraw)
             const uint8_t a = src[3];
             src += 4;
 
-            const size_t pixel_idx = y * ctx->width + x;
+            const size_t pixel_idx = static_cast<size_t>(y) * ctx->width + x;
             (*ctx->rgb)[pixel_idx] = color565(r, g, b);
 
-            if (build_mask) {
-                if (a >= 32) {
-                    const size_t mask_byte_idx = y * row_bytes + (x / 8);
-                    (*ctx->mask)[mask_byte_idx] |= (0x80 >> (x % 8));
-                } else {
+            if (build_alpha) {
+                (*ctx->alpha)[pixel_idx] = a;
+                if (a < 255) {
                     ctx->has_alpha = true;
                 }
             }
@@ -57,12 +55,11 @@ void pngDrawCallback(PNGDRAW *pDraw)
             const uint8_t b = src[2];
             src += 3;
 
-            const size_t pixel_idx = y * ctx->width + x;
+            const size_t pixel_idx = static_cast<size_t>(y) * ctx->width + x;
             (*ctx->rgb)[pixel_idx] = color565(r, g, b);
 
-            if (build_mask) {
-                const size_t mask_byte_idx = y * row_bytes + (x / 8);
-                (*ctx->mask)[mask_byte_idx] |= (0x80 >> (x % 8));
+            if (build_alpha) {
+                (*ctx->alpha)[pixel_idx] = 255;
             }
         }
     } else {
@@ -72,23 +69,21 @@ void pngDrawCallback(PNGDRAW *pDraw)
 
         bool has_trans = false;
         std::vector<uint8_t> alpha_mask;
-        if (build_mask) {
+        if (build_alpha) {
             alpha_mask.assign(row_bytes, 0);
-            has_trans = (ctx->png->getAlphaMask(pDraw, alpha_mask.data(), 32) != 0);
+            has_trans = (ctx->png->getAlphaMask(pDraw, alpha_mask.data(), 128) != 0);
             if (has_trans) {
                 ctx->has_alpha = true;
             }
         }
 
         for (int x = 0; x < w && x < ctx->width; ++x) {
-            const size_t pixel_idx = y * ctx->width + x;
+            const size_t pixel_idx = static_cast<size_t>(y) * ctx->width + x;
             (*ctx->rgb)[pixel_idx] = line_buffer[x];
 
-            if (build_mask) {
-                const size_t mask_byte_idx = y * row_bytes + (x / 8);
-                if (!has_trans || ((alpha_mask[x / 8] >> (7 - (x % 8))) & 1)) {
-                    (*ctx->mask)[mask_byte_idx] |= (0x80 >> (x % 8));
-                }
+            if (build_alpha) {
+                const bool opaque = !has_trans || (((alpha_mask[x / 8] >> (7 - (x % 8))) & 1) != 0);
+                (*ctx->alpha)[pixel_idx] = opaque ? 255 : 0;
             }
         }
     }
@@ -149,7 +144,7 @@ bool decodeSinglePngBuffer(
     int &out_w,
     int &out_h,
     std::vector<uint16_t> &out_rgb,
-    std::vector<uint8_t> *out_mask,
+    std::vector<uint8_t> *out_alpha,
     bool &out_has_alpha)
 {
     auto png = std::make_unique<PNG>();
@@ -166,13 +161,13 @@ bool decodeSinglePngBuffer(
         return false;
     }
 
-    out_rgb.assign(static_cast<size_t>(out_w) * out_h, 0);
-    if (out_mask) {
-        const size_t row_bytes = (out_w + 7) / 8;
-        out_mask->assign(row_bytes * out_h, 0);
+    const size_t total_pixels = static_cast<size_t>(out_w) * out_h;
+    out_rgb.assign(total_pixels, 0);
+    if (out_alpha) {
+        out_alpha->assign(total_pixels, 0);
     }
 
-    DecodeContext ctx{out_w, out_h, &out_rgb, out_mask, false, png.get()};
+    DecodeContext ctx{out_w, out_h, &out_rgb, out_alpha, false, png.get()};
     const int dec_rc = png->decode(&ctx, 0);
     png->close();
 
@@ -185,23 +180,15 @@ bool decodeSinglePngBuffer(
     return true;
 }
 
-inline bool getMaskBit(const std::vector<uint8_t> &mask, int width, int x, int y)
+inline uint16_t blendRgb565(uint16_t fg, uint16_t bg, uint8_t a)
 {
-    const size_t row_bytes = (width + 7) / 8;
-    const size_t idx = static_cast<size_t>(y) * row_bytes + (x / 8);
-    return ((mask[idx] >> (7 - (x % 8))) & 1) != 0;
-}
-
-inline void setMaskBit(std::vector<uint8_t> &mask, int width, int x, int y, bool val)
-{
-    const size_t row_bytes = (width + 7) / 8;
-    const size_t idx = static_cast<size_t>(y) * row_bytes + (x / 8);
-    const uint8_t bit = static_cast<uint8_t>(0x80 >> (x % 8));
-    if (val) {
-        mask[idx] |= bit;
-    } else {
-        mask[idx] &= ~bit;
-    }
+    const uint16_t inv_a = 255 - a;
+    const uint32_t fr = (fg >> 11) & 0x1F, fg_c = (fg >> 5) & 0x3F, fb = fg & 0x1F;
+    const uint32_t br = (bg >> 11) & 0x1F, bg_c = (bg >> 5) & 0x3F, bb = bg & 0x1F;
+    const uint32_t r = (fr * a + br * inv_a + 127) / 255;
+    const uint32_t g = (fg_c * a + bg_c * inv_a + 127) / 255;
+    const uint32_t b = (fb * a + bb * inv_a + 127) / 255;
+    return static_cast<uint16_t>((r << 11) | (g << 5) | b);
 }
 
 struct ChunkSlice {
@@ -342,7 +329,7 @@ bool FlyingPng::decodeStaticFromRam(const uint8_t *data, size_t size)
     Frame frame;
     int w = 0, h = 0;
     bool has_alpha = false;
-    if (!decodeSinglePngBuffer(data, size, w, h, frame.rgb, m_use_transparency ? &frame.mask : nullptr, has_alpha)) {
+    if (!decodeSinglePngBuffer(data, size, w, h, frame.rgb, m_use_transparency ? &frame.alpha : nullptr, has_alpha)) {
         return false;
     }
 
@@ -422,13 +409,11 @@ bool FlyingPng::decodeApngFromRam(const uint8_t *data, size_t size)
     }
 
     const size_t canvas_pixels = static_cast<size_t>(canvas_w) * canvas_h;
-    const size_t canvas_row_bytes = (canvas_w + 7) / 8;
-    const size_t canvas_mask_bytes = canvas_row_bytes * canvas_h;
 
     std::vector<uint16_t> canvas_rgb(canvas_pixels, 0);
-    std::vector<uint8_t>  canvas_mask(canvas_mask_bytes, 0);
+    std::vector<uint8_t>  canvas_alpha(canvas_pixels, 0);
     std::vector<uint16_t> prev_rgb;
-    std::vector<uint8_t>  prev_mask;
+    std::vector<uint8_t>  prev_alpha;
 
     m_frames.clear();
     m_frames.reserve(frame_descs.size());
@@ -465,9 +450,9 @@ bool FlyingPng::decodeApngFromRam(const uint8_t *data, size_t size)
 
         int fw = 0, fh = 0;
         std::vector<uint16_t> frame_rgb;
-        std::vector<uint8_t>  frame_mask;
+        std::vector<uint8_t>  frame_alpha;
         bool frame_has_alpha = false;
-        if (!decodeSinglePngBuffer(single_png.data(), single_png.size(), fw, fh, frame_rgb, &frame_mask, frame_has_alpha)) {
+        if (!decodeSinglePngBuffer(single_png.data(), single_png.size(), fw, fh, frame_rgb, &frame_alpha, frame_has_alpha)) {
             m_frames.clear();
             return false;
         }
@@ -475,7 +460,7 @@ bool FlyingPng::decodeApngFromRam(const uint8_t *data, size_t size)
 
         if (fd.dispose_op == 2) {
             prev_rgb = canvas_rgb;
-            prev_mask = canvas_mask;
+            prev_alpha = canvas_alpha;
         }
 
         // Composite onto canvas
@@ -483,14 +468,24 @@ bool FlyingPng::decodeApngFromRam(const uint8_t *data, size_t size)
         const int y0 = static_cast<int>(fd.y_offset);
         for (int fy = 0; fy < fh; ++fy) {
             for (int fx = 0; fx < fw; ++fx) {
-                const bool opaque = getMaskBit(frame_mask, fw, fx, fy);
-                if (fd.blend_op == 1 && !opaque) {
-                    continue; // OVER: skip transparent pixels
+                const size_t fidx = static_cast<size_t>(fy) * fw + fx;
+                const uint8_t fa = frame_alpha[fidx];
+                const size_t cidx = static_cast<size_t>(y0 + fy) * canvas_w + (x0 + fx);
+                if (fd.blend_op == 1) {
+                    if (fa == 0) {
+                        continue;
+                    } else if (fa == 255) {
+                        canvas_rgb[cidx] = frame_rgb[fidx];
+                        canvas_alpha[cidx] = 255;
+                    } else {
+                        canvas_rgb[cidx] = blendRgb565(frame_rgb[fidx], canvas_rgb[cidx], fa);
+                        canvas_alpha[cidx] = static_cast<uint8_t>(
+                            fa + (canvas_alpha[cidx] * (255 - fa) + 127) / 255);
+                    }
+                } else {
+                    canvas_rgb[cidx] = frame_rgb[fidx];
+                    canvas_alpha[cidx] = fa;
                 }
-                const int cx = x0 + fx;
-                const int cy = y0 + fy;
-                canvas_rgb[static_cast<size_t>(cy) * canvas_w + cx] = frame_rgb[static_cast<size_t>(fy) * fw + fx];
-                setMaskBit(canvas_mask, canvas_w, cx, cy, opaque);
             }
         }
 
@@ -499,7 +494,7 @@ bool FlyingPng::decodeApngFromRam(const uint8_t *data, size_t size)
         out_frame.rgb = canvas_rgb;
         out_frame.delay_ms = fd.delay_ms;
         if (m_use_transparency) {
-            out_frame.mask = canvas_mask;
+            out_frame.alpha = canvas_alpha;
         }
         m_frames.push_back(std::move(out_frame));
 
@@ -509,16 +504,15 @@ bool FlyingPng::decodeApngFromRam(const uint8_t *data, size_t size)
             any_alpha = true;
             for (int fy = 0; fy < fh; ++fy) {
                 for (int fx = 0; fx < fw; ++fx) {
-                    const int cx = x0 + fx;
-                    const int cy = y0 + fy;
-                    canvas_rgb[static_cast<size_t>(cy) * canvas_w + cx] = 0;
-                    setMaskBit(canvas_mask, canvas_w, cx, cy, false);
+                    const size_t cidx = static_cast<size_t>(y0 + fy) * canvas_w + (x0 + fx);
+                    canvas_rgb[cidx] = 0;
+                    canvas_alpha[cidx] = 0;
                 }
             }
         } else if (fd.dispose_op == 2) {
             // PREVIOUS: restore canvas before this frame
             canvas_rgb = std::move(prev_rgb);
-            canvas_mask = std::move(prev_mask);
+            canvas_alpha = std::move(prev_alpha);
         }
     }
 
@@ -572,16 +566,28 @@ void FlyingPng::render()
     const int16_t cur_y = m_y >> 4;
 
     auto *hub75 = static_cast<MatrixPanel_I2S_DMA *>(&m_matrix);
-    FastHub75::drawRGBBitmap(
-        *hub75,
-        cur_x,
-        cur_y,
-        frame.rgb.data(),
-        (m_use_transparency && m_has_alpha && !frame.mask.empty()) ? frame.mask.data() : nullptr,
-        m_width,
-        m_height,
-        m_use_transparency && m_has_alpha
-    );
+    if (m_use_transparency && m_has_alpha && !frame.alpha.empty()) {
+        FastHub75::drawRGBABitmap(
+            *hub75,
+            cur_x,
+            cur_y,
+            frame.rgb.data(),
+            frame.alpha.data(),
+            m_width,
+            m_height
+        );
+    } else {
+        FastHub75::drawRGBBitmap(
+            *hub75,
+            cur_x,
+            cur_y,
+            frame.rgb.data(),
+            nullptr,
+            m_width,
+            m_height,
+            false
+        );
+    }
 
     // Handle bouncing or wrap-around movement if dx/dy non-zero
     advanceAxis(m_x, m_dx, m_width, m_matrix.width(), m_wrap_around);

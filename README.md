@@ -17,9 +17,7 @@ To upload data files:
         input: scroll or bounce texts ("Merry Christmas", "Happy Newyear", )
                 Year of birth, for calculating age for birthdays
                 Colors / fonts
-    - Custom scenes where you can select one background effect (clearScreen, flames, wavesim, Bumpmap ) and up to 5 additional (other effects)
     - Daily/Weekly Reminders (weekend/bedtime)?
-    - Show events from calendar (eg google calendar)
     - Add configuration for all of the effects 
 
     - More effects:
@@ -38,12 +36,14 @@ To upload data files:
         Is it friday?
 
     - Allow setting outline color for for Hearts and Bubbles 
-
-    - Dirty rectangel updating...(Fullscreen update every frame max out cpu)
     - Change "Couldn't connect" etc font so it doesn't spill outside display whehn connect failed
-
     - Use dual wifi mode and try connecting to wifi when valid ssid and pwd exists
     - Make wifi retry connect after fail every 30 secs if a valid ssid / pwd exists
+
+    - Show events from calendar (eg google calendar)
+    - Custom scenes where you can select one background effect (clearScreen, flames, wavesim, Bumpmap ) and up to 5 additional (other effects)
+    - Dirty rectangel updating...(Fullscreen update every frame max out cpu)
+
     
 
 Done:

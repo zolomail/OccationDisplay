@@ -149,6 +149,96 @@ void FastHub75::drawRGBBitmap(
     }
 }
 
+void FastHub75::drawRGBABitmap(
+    MatrixPanel_I2S_DMA &panel,
+    int16_t x,
+    int16_t y,
+    const uint16_t *bitmap,
+    const uint8_t *alpha,
+    int16_t w,
+    int16_t h
+) {
+    if (!bitmap || !alpha || w <= 0 || h <= 0) return;
+
+    frameStruct *fb = panel.*AccessTag<MatrixPanel_fb>::ptr;
+    if (!fb) return;
+
+    const int16_t panel_w = panel.width();
+    const int16_t panel_h = panel.height();
+    const uint8_t rows_per_frame = panel_h / 2;
+    const uint8_t color_depth = 8;
+
+    const int16_t start_y = std::max<int16_t>(0, y);
+    const int16_t end_y   = std::min<int16_t>(panel_h, y + h);
+    if (start_y >= end_y) return;
+
+    const int16_t start_x = std::max<int16_t>(0, x);
+    const int16_t end_x   = std::min<int16_t>(panel_w, x + w);
+    if (start_x >= end_x) return;
+
+    for (int16_t py = start_y; py < end_y; ++py) {
+        const int16_t img_y = py - y;
+        const uint16_t *bitmap_row = bitmap + (img_y * w);
+        const uint8_t  *alpha_row  = alpha  + (img_y * w);
+
+        const uint8_t sub_row = (py >= rows_per_frame) ? (py - rows_per_frame) : py;
+        const uint16_t bit_offset = (py >= rows_per_frame) ? BITS_RGB2_OFFSET : 0;
+        const uint16_t clear_mask = (py >= rows_per_frame) ? BITMASK_RGB2_CLEAR : BITMASK_RGB1_CLEAR;
+
+        auto &rowStruct = fb->rowBits[sub_row];
+        ESP32_I2S_DMA_STORAGE_TYPE *base_ptr = rowStruct->data.get();
+        const uint16_t stride = rowStruct->width;
+
+        ESP32_I2S_DMA_STORAGE_TYPE *plane_ptrs[8];
+        #pragma GCC unroll 8
+        for (uint8_t d = 0; d < color_depth; ++d) {
+            plane_ptrs[d] = base_ptr + (d * stride);
+        }
+
+        for (int16_t px = start_x; px < end_x; ++px) {
+            const int16_t img_x = px - x;
+            const uint8_t a = alpha_row[img_x];
+            if (a == 0) continue;
+
+            uint8_t r, g, b;
+            MatrixPanel_I2S_DMA::color565to888(bitmap_row[img_x], r, g, b);
+            uint8_t r_comp = lumConvTab[r];
+            uint8_t g_comp = lumConvTab[g];
+            uint8_t b_comp = lumConvTab[b];
+
+            if (a < 255) {
+                uint8_t bg_r = 0, bg_g = 0, bg_b = 0;
+                #pragma GCC unroll 8
+                for (uint8_t d = 0; d < color_depth; ++d) {
+                    const uint16_t wbits = plane_ptrs[d][px] >> bit_offset;
+                    bg_r |= ((wbits >> 0) & 1) << d;
+                    bg_g |= ((wbits >> 1) & 1) << d;
+                    bg_b |= ((wbits >> 2) & 1) << d;
+                }
+                const uint16_t inv_a = 255 - a;
+                r_comp = static_cast<uint8_t>((r_comp * a + bg_r * inv_a + 127) / 255);
+                g_comp = static_cast<uint8_t>((g_comp * a + bg_g * inv_a + 127) / 255);
+                b_comp = static_cast<uint8_t>((b_comp * a + bg_b * inv_a + 127) / 255);
+            }
+
+            if ((r_comp | g_comp | b_comp) == 0) {
+                #pragma GCC unroll 8
+                for (uint8_t d = 0; d < color_depth; ++d) {
+                    plane_ptrs[d][px] &= clear_mask;
+                }
+            } else {
+                #pragma GCC unroll 8
+                for (uint8_t d = 0; d < color_depth; ++d) {
+                    const uint16_t rgb_bits = (((b_comp >> d) & 1) << 2) |
+                                              (((g_comp >> d) & 1) << 1) |
+                                               ((r_comp >> d) & 1);
+                    plane_ptrs[d][px] = (plane_ptrs[d][px] & clear_mask) | (rgb_bits << bit_offset);
+                }
+            }
+        }
+    }
+}
+
 void FastHub75::applyPanelCalibration(
     MatrixPanel_I2S_DMA &panel,
     const PanelCalibration *cal,
