@@ -10,6 +10,7 @@
 
 // Custom Scene, Service & Effect Headers
 #include "Scene.h"
+#include "Occasions.h"
 #include "Weather.h"
 #include "WebUi.h"
 #include "effects/ClearScreen.h"
@@ -118,7 +119,7 @@ std::unique_ptr<Scene> createScene(SceneId id, MatrixPanel_I2S_DMA &display)
         case SceneId::Welcome:
             scene->add_effect<ClearScreen>(scene->color("Background Color", Colors::BLACK));
             scene->add_effect<Border>(2, Colors::WHITE, Colors::BLUE, BorderPattern::Dashed, 4, 1);
-            scene->add_effect<FlyingText>("-OCCATION DISPLAY-", XPOS_CENTER, YPOS_CENTER, 0, 0, Colors::RED);
+            scene->add_effect<FlyingText>("-OCCASION DISPLAY-", XPOS_CENTER, YPOS_CENTER, 0, 0, Colors::RED);
             break;
 
         case SceneId::SetupAp: {
@@ -138,8 +139,9 @@ std::unique_ptr<Scene> createScene(SceneId id, MatrixPanel_I2S_DMA &display)
             const String ip_str = WiFi.localIP().toString();
             scene->add_effect<ClearScreen>();
             scene->add_effect<QrCode>("https://" + ip_str + "/", 2, YPOS_CENTER);
-            scene->add_effect<FlyingText>("SCAN FOR WEB UI", 33, 8, 0, 0, Colors::CYAN, TINY_WIDE_FONT);
-            scene->add_effect<FlyingText>(ip_str, 33, 18, 0, 0, Colors::WHITE, TINY_WIDE_FONT);
+            scene->add_effect<FlyingText>("SCAN FOR WEB UI", 33, YPOS_1_QUART, 0, 0, Colors::CYAN, TINY_WIDE_FONT);
+            scene->add_effect<FlyingText>("SSID: " + WiFi.SSID(), 33, YPOS_CENTER, 0, 0, Colors::WHITE, TINY_WIDE_FONT);
+            scene->add_effect<FlyingText>(ip_str, 33, YPOS_3_QUART, 0, 0, Colors::WHITE, TINY_WIDE_FONT);
             break;
         }
 
@@ -155,7 +157,7 @@ std::unique_ptr<Scene> createScene(SceneId id, MatrixPanel_I2S_DMA &display)
         case SceneId::BumpMapEffect:
             scene->add_effect<BumpMap>(
                 scene->color("Bump Color", Colors::ORANGE),
-                scene->text("Bump Text", "OCCATION"),
+                scene->text("Bump Text", "OCCASION"),
                 false);
             break;
 
@@ -358,35 +360,23 @@ std::unique_ptr<Scene> createScene(SceneId id, MatrixPanel_I2S_DMA &display)
     return scene;
 }
 
-void renderScene(SceneId id)
+void renderScene(SceneId id, const std::vector<std::pair<String, String>>* scoped_params = nullptr)
 {
-    if (!active_scene || id != active_scene_id || WebUi::consumeSceneDirty()) {
+    static std::vector<std::pair<String, String>> active_scoped_params;
+    const bool scoped_changed = (scoped_params != nullptr)
+        ? (*scoped_params != active_scoped_params)
+        : !active_scoped_params.empty();
+
+    if (!active_scene || id != active_scene_id || scoped_changed || WebUi::consumeSceneDirty()) {
         active_scene.reset(); // Release existing scene's RAM before allocating the next
+        active_scoped_params = scoped_params ? *scoped_params : std::vector<std::pair<String, String>>{};
+        SceneParams::setScopedOverrides(scoped_params);
         active_scene    = createScene(id, *dma_display);
+        SceneParams::setScopedOverrides(nullptr);
         active_scene_id = id;
         SceneParams::publishActive(id, active_scene->params());
     }
     active_scene->render();
-}
-
-SceneId selectDateScene(const tm& t)
-{
-    const int month = t.tm_mon + 1;
-    const int day   = t.tm_mday;
-    const int hours = t.tm_hour;
-
-    if (month == 1 && day == 1 && hours < 12) return SceneId::NewYearsMidnight;
-    if (month == 1)                           return SceneId::JanuaryDays;
-    if (month == 2 && day == 14)              return SceneId::Aquatic;
-    if ((month == 10 && day > 15) ||
-        (month == 11 && day == 1 && hours < 8)) return SceneId::Halloween;
-    if (month == 11)                          return SceneId::JustSnow;
-    if (month == 12 && day == 24)             return SceneId::ChristmasEve;
-    if (month == 12 && day == 30)             return SceneId::Birthday;
-    if (month == 12 && day == 31)             return SceneId::NewYearsDay;
-    if (month == 12)                          return SceneId::ChristmasDays;
-
-    return SceneId::NormalDays;
 }
 
 void updateWifiBackground()
@@ -503,6 +493,9 @@ void setup()
     } else {
         Serial.println("LittleFS mounted successfully.");
     }
+
+    // Load persisted occasion schedule (or create defaults)
+    Occasions::begin();
 
     // Configure native ESP32 SNTP with automatic CET/CEST Daylight Saving Time
     configTzTime(Config::TZ_INFO, Config::NTP_SERVER);
@@ -648,8 +641,15 @@ void loop()
         localtime_r(&now, &current_time);
         const bool    has_valid_time = (current_time.tm_year >= 120);
         const SceneId override_id    = WebUi::selectedScene();
-        const SceneId auto_id        = has_valid_time ? selectDateScene(current_time) : SceneId::Welcome;
-        renderScene((override_id != SceneId::None) ? override_id : auto_id);
+        if (override_id != SceneId::None) {
+            renderScene(override_id);
+        } else if (has_valid_time) {
+            std::vector<std::pair<String, String>> occ_params;
+            const SceneId auto_id = Occasions::resolveActive(current_time, occ_params);
+            renderScene(auto_id, &occ_params);
+        } else {
+            renderScene(SceneId::NormalDays);
+        }
 
         if (WebUi::showIp()) {
             const IPAddress ip = (WiFi.status() == WL_CONNECTED) ? WiFi.localIP() : WiFi.softAPIP();

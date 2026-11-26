@@ -1,5 +1,5 @@
-# OccationDisplay
-Scroller and occation animation display on multiple 64x32 led segment displays using ESP32-S3 SuperMini
+# OccasionDisplay
+Scroller and occasion animation display on multiple 64x32 led segment displays using ESP32-S3 SuperMini
 
 To upload use:
     pio run -t upload
@@ -14,16 +14,14 @@ To convert pngs to SDF atlasses:
     .\convert_sdf.cmd
 
 #TODO:
-    EFFECTS AND OCCATION PLANNING
-    - Add user configurable scenes (replace selectDateScene ) the following should be specified:
-        which scene
-        start: month, day, hour
-        end:   month, day, hour
-        input: scroll or bounce texts ("Merry Christmas", "Happy Newyear", )
-                Year of birth, for calculating age for birthdays
-                Colors / fonts
-    - Daily/Weekly Reminders (weekend/bedtime)?
     - Add configuration for all of the effects 
+    - Allow setting outline color for for Hearts and Bubbles 
+    - Change "Couldn't connect" etc font so it doesn't spill outside display whehn connect failed
+    - Use dual wifi mode and try connecting to wifi when valid ssid and pwd exists
+    - Make wifi retry connect after fail every 30 secs if a valid ssid / pwd exists
+    - Show events from calendar (eg google calendar)
+    - Custom scenes where you can select one background effect (clearScreen, flames, wavesim, Bumpmap ) and up to 5 additional (other effects)
+    - Dirty rectangel updating...(Fullscreen update every frame max out cpu)
 
     - More effects:
         Christmas tree
@@ -33,7 +31,7 @@ To convert pngs to SDF atlasses:
         Sommerday (fields trees birds)
         Raycaster in full display width
 
-    - Occations:
+    - Occasions:
         Wedding days
         Aniversery
         Is it friday?
@@ -42,18 +40,10 @@ To convert pngs to SDF atlasses:
         Full screen weather
         Easter (Eggs, bunny, easterlillies)
         Saint Patrics (Shamrocks, nome)
-        April fools ??
         Sankt Hans (Bon fire, witch)
         Mortens Aften (Ducks)
+        April fools ??
 
-    - Allow setting outline color for for Hearts and Bubbles 
-    - Change "Couldn't connect" etc font so it doesn't spill outside display whehn connect failed
-    - Use dual wifi mode and try connecting to wifi when valid ssid and pwd exists
-    - Make wifi retry connect after fail every 30 secs if a valid ssid / pwd exists
-
-    - Show events from calendar (eg google calendar)
-    - Custom scenes where you can select one background effect (clearScreen, flames, wavesim, Bumpmap ) and up to 5 additional (other effects)
-    - Dirty rectangel updating...(Fullscreen update every frame max out cpu)
 
     
 
@@ -76,3 +66,5 @@ Done:
     - Allow calibrating panels individually
     - Add brightness aadjustment in debug
     - Fix "showing new years eve" when no date time
+    - Add user configurable scenes (replace selectDateScene ) the details  specified
+    - Daily/Weekly Reminders (weekend/bedtime)?

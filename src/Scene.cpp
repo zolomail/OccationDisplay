@@ -16,6 +16,8 @@ std::vector<std::pair<String, String>> s_overrides[SCENE_COUNT];
 SceneId                 s_active_id = SceneId::None;
 std::vector<SceneParam> s_active_params;
 
+const std::vector<std::pair<String, String>>* s_scoped_overrides = nullptr;
+
 void ensureMutex()
 {
 	if (!s_mutex) {
@@ -40,6 +42,15 @@ String makeKey(const char* label)
 
 bool getOverride(SceneId id, const String& key, String& out_val)
 {
+	if (s_scoped_overrides) {
+		for (const auto& kv : *s_scoped_overrides) {
+			if (kv.first == key) {
+				out_val = kv.second;
+				return true;
+			}
+		}
+		return false;
+	}
 	const size_t idx = static_cast<size_t>(id);
 	if (idx >= SCENE_COUNT) return false;
 	ensureMutex();
@@ -155,6 +166,11 @@ void clearOverrides(SceneId id)
 	xSemaphoreTake(s_mutex, portMAX_DELAY);
 	s_overrides[idx].clear();
 	xSemaphoreGive(s_mutex);
+}
+
+void setScopedOverrides(const std::vector<std::pair<String, String>>* params)
+{
+	s_scoped_overrides = params;
 }
 
 void publishActive(SceneId id, const std::vector<SceneParam>& params)

@@ -100,6 +100,7 @@ namespace SceneParams {
 
 void setOverride(SceneId id, const String& key, const String& value);
 void clearOverrides(SceneId id);
+void setScopedOverrides(const std::vector<std::pair<String, String>>* params);
 void publishActive(SceneId id, const std::vector<SceneParam>& params);
 bool getActive(SceneId expected_id, std::vector<SceneParam>& out_params);
 

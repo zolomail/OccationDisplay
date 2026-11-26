@@ -8,12 +8,13 @@
 #include <utility>
 #include <vector>
 #include "Weather.h"
+#include "Occasions.h"
 
 namespace WebUi {
 
 namespace {
 
-constexpr char AP_SSID[]        = "Occation-Display";
+constexpr char AP_SSID[]        = "Occasion-Display";
 constexpr char AP_PASSWORD[]    = "123456789";
 
 constexpr char DEFAULT_SSID[]   = "bandit";
@@ -50,9 +51,10 @@ String wifi_ssid     = DEFAULT_SSID;
 String wifi_password = DEFAULT_PASS;
 String wifi_err      = "";
 
-bool     ap_ready           = false;
-uint32_t ap_up_ms           = 0;
-bool     client_requested   = false;
+bool     ap_ready                = false;
+uint32_t ap_up_ms                = 0;
+bool     client_requested        = false;
+bool     wifi_changed_qr_pending = false;
 bool     show_ip            = true;
 bool     show_cpu           = true;
 bool     scene_dirty        = false;
@@ -70,8 +72,7 @@ struct SceneOption {
 };
 
 constexpr SceneOption SCENE_OPTIONS[] = {
-    { SceneId::None,             "Current Occation" },
-    { SceneId::WebUiQr,          "QR for UI on WiFi"},
+    { SceneId::None,             "Current Occasion" },
 
     { SceneId::JustSnow,         "JustSnow"         },
     { SceneId::ChristmasDays,    "ChristmasDays"    },
@@ -173,7 +174,7 @@ bool getFormArg(const String& body, const char* key, String& outVal)
 String readRequestBody(httpd_req_t* req)
 {
     const size_t len = req->content_len;
-    if (len == 0 || len > 2048) {
+    if (len == 0 || len > 16384) {
         return "";
     }
     String buf;
@@ -291,10 +292,19 @@ esp_err_t handleAppJsHttp(httpd_req_t* req)
     return serveStaticFile(req, "/web/app.js", "application/javascript");
 }
 
+void markClientConnected()
+{
+    client_requested = true;
+    if (selected_scene == SceneId::WebUiQr && WiFi.status() == WL_CONNECTED) {
+        selected_scene = SceneId::None;
+        scene_dirty = true;
+    }
+}
+
 // GET /
 esp_err_t handleRootHttp(httpd_req_t* req)
 {
-    client_requested = true;
+    markClientConnected();
     String wifi_err_block;
     if (wifi_err.length() > 0) {
         wifi_err_block = "<div class='alert'><b>Last Wi-Fi error:</b> " + htmlEscape(wifi_err) + "</div>";
@@ -363,13 +373,17 @@ esp_err_t handleRootHttp(httpd_req_t* req)
 // POST /options
 esp_err_t handleOptionsHttp(httpd_req_t* req)
 {
-    client_requested = true;
+    markClientConnected();
     const String body = readRequestBody(req);
     String val;
     if (getFormArg(body, "scene_id", val)) {
         const int id = val.toInt();
         if (id >= static_cast<int>(SceneId::Welcome) && id <= static_cast<int>(SceneId::None)) {
-            selected_scene = static_cast<SceneId>(id);
+            const SceneId next = static_cast<SceneId>(id);
+            if (next != selected_scene) {
+                SceneParams::clearOverrides(next);
+                selected_scene = next;
+            }
         }
     }
     if (getFormArg(body, "show_ip", val)) {
@@ -479,7 +493,7 @@ const char* paramTypeName(SceneParamType t)
 // GET /scene_config?scene_id=<id>
 esp_err_t handleSceneConfigGetHttp(httpd_req_t* req)
 {
-    client_requested = true;
+    markClientConnected();
     SceneId sid = selected_scene;
     char query[64] = {0};
     if (httpd_req_get_url_query_str(req, query, sizeof(query)) == ESP_OK) {
@@ -544,7 +558,7 @@ esp_err_t handleSceneConfigGetHttp(httpd_req_t* req)
 // POST /scene_config
 esp_err_t handleSceneConfigPostHttp(httpd_req_t* req)
 {
-    client_requested = true;
+    markClientConnected();
     const String body = readRequestBody(req);
     String val;
     if (!getFormArg(body, "scene_id", val)) {
@@ -585,6 +599,32 @@ esp_err_t handleSceneConfigPostHttp(httpd_req_t* req)
     return httpd_resp_send(req, "OK", 2);
 }
 
+// GET /occasions
+esp_err_t handleOccasionsGetHttp(httpd_req_t* req)
+{
+    markClientConnected();
+    const String json = Occasions::toJson();
+    httpd_resp_set_type(req, "application/json");
+    return httpd_resp_send(req, json.c_str(), json.length());
+}
+
+// POST /occasions
+esp_err_t handleOccasionsPostHttp(httpd_req_t* req)
+{
+    markClientConnected();
+    const String body = readRequestBody(req);
+    String val;
+    if (body == "reset=1" || (getFormArg(body, "reset", val) && val == "1")) {
+        Occasions::resetToDefaults();
+    } else if (!Occasions::fromJson(body)) {
+        httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "Invalid occasions JSON");
+        return ESP_FAIL;
+    }
+    scene_dirty = true;
+    httpd_resp_set_type(req, "text/plain");
+    return httpd_resp_send(req, "OK", 2);
+}
+
 // POST /wifi
 esp_err_t handleWifiHttp(httpd_req_t* req)
 {
@@ -605,6 +645,7 @@ esp_err_t handleWifiHttp(httpd_req_t* req)
     prefs.end();
 
     wifi_err = "";
+    wifi_changed_qr_pending = true;
     const String resp = renderTemplate("/web/wifi_saved.html", {
         { "WIFI_SSID", htmlEscape(wifi_ssid) }
     });
@@ -642,6 +683,8 @@ void registerRoutes(httpd_handle_t srv)
     const httpd_uri_t scene_cfg_post_uri   = { "/scene_config", HTTP_POST, handleSceneConfigPostHttp, nullptr };
     const httpd_uri_t wifi_uri             = { "/wifi",         HTTP_POST, handleWifiHttp,            nullptr };
     const httpd_uri_t reboot_uri           = { "/reboot",       HTTP_POST, handleRebootHttp,          nullptr };
+    const httpd_uri_t occasions_get_uri    = { "/occasions",    HTTP_GET,  handleOccasionsGetHttp,    nullptr };
+    const httpd_uri_t occasions_post_uri   = { "/occasions",    HTTP_POST, handleOccasionsPostHttp,   nullptr };
 
     httpd_register_uri_handler(srv, &root_uri);
     httpd_register_uri_handler(srv, &style_uri);
@@ -651,6 +694,8 @@ void registerRoutes(httpd_handle_t srv)
     httpd_register_uri_handler(srv, &scene_cfg_post_uri);
     httpd_register_uri_handler(srv, &wifi_uri);
     httpd_register_uri_handler(srv, &reboot_uri);
+    httpd_register_uri_handler(srv, &occasions_get_uri);
+    httpd_register_uri_handler(srv, &occasions_post_uri);
     httpd_register_err_handler(srv, HTTPD_404_NOT_FOUND, handleNotFoundHttp);
 }
 
@@ -689,7 +734,7 @@ void begin()
     http_cfg.server_port      = 80;
     http_cfg.ctrl_port        = 32768;
     http_cfg.core_id          = 0;
-    http_cfg.max_uri_handlers = 12;
+    http_cfg.max_uri_handlers = 16;
     http_cfg.lru_purge_enable = true;
     if (httpd_start(&http_server, &http_cfg) == ESP_OK) {
         registerRoutes(http_server);
@@ -702,7 +747,7 @@ void begin()
     https_cfg.httpd.ctrl_port  = 32769;
     https_cfg.httpd.core_id    = 0;
     https_cfg.httpd.max_open_sockets = 4;
-    https_cfg.httpd.max_uri_handlers = 12;
+    https_cfg.httpd.max_uri_handlers = 16;
     https_cfg.httpd.lru_purge_enable = true;
     https_cfg.servercert       = reinterpret_cast<const uint8_t*>(SERVER_CERT_PEM);
     https_cfg.servercert_len   = sizeof(SERVER_CERT_PEM);
@@ -719,6 +764,11 @@ void handleClient()
     if (reboot_pending) {
         delay(150);
         ESP.restart();
+    }
+    if (wifi_changed_qr_pending && WiFi.status() == WL_CONNECTED) {
+        wifi_changed_qr_pending = false;
+        selected_scene = SceneId::WebUiQr;
+        scene_dirty = true;
     }
     if (ap_ready) {
         dns_server.processNextRequest();

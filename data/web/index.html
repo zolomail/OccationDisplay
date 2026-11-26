@@ -18,7 +18,7 @@
 
     {{WIFI_ERROR_BLOCK}}
 
-    <details class="card" open>
+    <details id="card-scene" class="card" open>
       <summary class="card-header">
         <h2>Scene</h2>
         <span class="card-toggle" aria-hidden="true"></span>
@@ -29,6 +29,19 @@
           <select id="scene_id">{{SCENE_OPTIONS}}</select>
         </div>
         <div id="scene-cfg" class="scene-cfg"></div>
+      </div>
+    </details>
+
+    <details id="card-occasions" class="card">
+      <summary class="card-header">
+        <h2>Occasions</h2>
+        <span class="card-toggle" aria-hidden="true"></span>
+      </summary>
+      <div class="card-body">
+        <div id="occ-list"></div>
+        <div class="actions" style="margin-top:10px;">
+          <button type="button" id="btn-occ-reset" class="btn btn-secondary">Reset Defaults</button>
+        </div>
       </div>
     </details>
 
@@ -86,18 +99,7 @@
 
   <div id="about-modal" class="modal" hidden role="dialog" aria-modal="true" aria-labelledby="about-title">
     <div class="modal-card">
-      <h2 id="about-title">Occation Display</h2>
-      <p>ESP32-S3 HUB75 LED matrix display for customizable occasion scenes, animations, live clock, and weather.</p>
-      <p>&copy; Jeppe S. S&oslash;rensen 2026<br><a href="mailto:zolomail@gmail.com" style="color:var(--accent);">zolomail@gmail.com</a></p>
-      <div class="actions">
-        <button type="button" id="btn-about-close" class="btn btn-primary">Close</button>
-      </div>
-    </div>
-  </div>
-
-  <div id="about-modal" class="modal" hidden role="dialog" aria-modal="true" aria-labelledby="about-title">
-    <div class="modal-card">
-      <h2 id="about-title">Occation Display</h2>
+      <h2 id="about-title">Occasion Display</h2>
       <p>ESP32-S3 HUB75 LED matrix display for customizable occasion scenes, animations, live clock, and weather.</p>
       <p>&copy; Jeppe S. S&oslash;rensen 2026<br><a href="mailto:zolomail@gmail.com" style="color:var(--accent);">zolomail@gmail.com</a></p>
       <div class="actions">
