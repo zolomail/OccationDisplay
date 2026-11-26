@@ -50,10 +50,12 @@ String wifi_ssid     = DEFAULT_SSID;
 String wifi_password = DEFAULT_PASS;
 String wifi_err      = "";
 
-bool     is_ap            = false;
-bool     show_ip          = true;
-bool     show_cpu         = true;
-bool     scene_dirty      = false;
+bool     ap_ready           = false;
+uint32_t ap_up_ms           = 0;
+bool     client_requested   = false;
+bool     show_ip            = true;
+bool     show_cpu           = true;
+bool     scene_dirty        = false;
 bool     reboot_pending   = false;
 uint16_t panel_chain        = 3;
 uint16_t active_panel_chain = 3;
@@ -69,39 +71,54 @@ struct SceneOption {
 
 constexpr SceneOption SCENE_OPTIONS[] = {
     { SceneId::None,             "Current Occation" },
-    { SceneId::Test,             "Test"             },
+    { SceneId::WebUiQr,          "QR for UI on WiFi"},
+
+    { SceneId::JustSnow,         "JustSnow"         },
+    { SceneId::ChristmasDays,    "ChristmasDays"    },
+    { SceneId::ChristmasEve,     "ChristmasEve"     },
+    { SceneId::NewYearsDay,      "NewYearsDay"      },
     { SceneId::NewYearsMidnight, "NewYearsMidnight" },
     { SceneId::JanuaryDays,      "JanuaryDays"      },
-    { SceneId::Aquatic,          "Aquatic"          },
-    { SceneId::Halloween,        "Halloween"        },
-    { SceneId::JustSnow,         "JustSnow"         },
-    { SceneId::ChristmasEve,     "ChristmasEve"     },
-    { SceneId::Birthday,         "Birthday"         },
-    { SceneId::NewYearsDay,      "NewYearsDay"      },
-    { SceneId::ChristmasDays,    "ChristmasDays"    },
+    { SceneId::ValentinesDay,    "ValentinesDay"    },
     { SceneId::NormalDays,       "NormalDays"       },
+    { SceneId::Halloween,        "Halloween"        },
+    { SceneId::Test,             "------"           },
+    { SceneId::Birthday,         "Birthday"         },
+    { SceneId::Aquatic,          "Aquatic"          },
     { SceneId::FlamingHot,       "FlamingHot"       },
     { SceneId::WaterEffect,      "WaterEffect"      },
     { SceneId::BumpMapEffect,    "BumpMapEffect"    },
-    { SceneId::ValentinesDay,    "ValentinesDay"    },
     { SceneId::CubeEffect,       "CubeEffect"       },
     { SceneId::BorderTest,       "Border Test"      },
     { SceneId::ScrollerTest,     "Scroller Test"    },
     { SceneId::TestAnimatedPng,  "Animated PNG"     },
     { SceneId::SDFTest,          "SDF Test"         },
     { SceneId::Test5,            "Test 5"           },
-    { SceneId::TrackmanTM5Beta,  "TrackmanTM5Beta"  }
+    { SceneId::TrackmanTM5Beta,  "TrackmanTM5Beta"  },
+    { SceneId::Test,             "Test"             }
     
 };
 
+void startAccessPoint()
+{
+    WiFi.mode(WIFI_AP_STA);
+    const IPAddress ap_ip(192, 168, 4, 1);
+    WiFi.softAPConfig(ap_ip, ap_ip, IPAddress(255, 255, 255, 0));
+    WiFi.softAP(AP_SSID, AP_PASSWORD, 1, false, 4);
+    dns_server.start(53, "*", ap_ip);
+    ap_up_ms = millis();
+    ap_ready = true;
+    Serial.printf("AP started: %s (%s)\n", AP_SSID, ap_ip.toString().c_str());
+}
+
 void connectStation()
 {
-    is_ap   = false;
-    show_ip = true;
-    dns_server.stop();
-    WiFi.softAPdisconnect(true);
-    WiFi.mode(WIFI_STA);
-    WiFi.begin(wifi_ssid.c_str(), wifi_password.c_str());
+    if (wifi_ssid.length() > 0 && wifi_password.length() > 0) {
+        wifi_err = "Connecting...";
+        WiFi.begin(wifi_ssid.c_str(), wifi_password.c_str());
+    } else {
+        wifi_err = "No Wi-Fi set";
+    }
 }
 
 int hexVal(char c)
@@ -277,6 +294,7 @@ esp_err_t handleAppJsHttp(httpd_req_t* req)
 // GET /
 esp_err_t handleRootHttp(httpd_req_t* req)
 {
+    client_requested = true;
     String wifi_err_block;
     if (wifi_err.length() > 0) {
         wifi_err_block = "<div class='alert'><b>Last Wi-Fi error:</b> " + htmlEscape(wifi_err) + "</div>";
@@ -345,6 +363,7 @@ esp_err_t handleRootHttp(httpd_req_t* req)
 // POST /options
 esp_err_t handleOptionsHttp(httpd_req_t* req)
 {
+    client_requested = true;
     const String body = readRequestBody(req);
     String val;
     if (getFormArg(body, "scene_id", val)) {
@@ -460,6 +479,7 @@ const char* paramTypeName(SceneParamType t)
 // GET /scene_config?scene_id=<id>
 esp_err_t handleSceneConfigGetHttp(httpd_req_t* req)
 {
+    client_requested = true;
     SceneId sid = selected_scene;
     char query[64] = {0};
     if (httpd_req_get_url_query_str(req, query, sizeof(query)) == ESP_OK) {
@@ -524,6 +544,7 @@ esp_err_t handleSceneConfigGetHttp(httpd_req_t* req)
 // POST /scene_config
 esp_err_t handleSceneConfigPostHttp(httpd_req_t* req)
 {
+    client_requested = true;
     const String body = readRequestBody(req);
     String val;
     if (!getFormArg(body, "scene_id", val)) {
@@ -567,6 +588,7 @@ esp_err_t handleSceneConfigPostHttp(httpd_req_t* req)
 // POST /wifi
 esp_err_t handleWifiHttp(httpd_req_t* req)
 {
+    client_requested = true;
     const String body = readRequestBody(req);
     String ssid_val;
     String pass_val;
@@ -597,7 +619,7 @@ esp_err_t handleWifiHttp(httpd_req_t* req)
 
 esp_err_t handleNotFoundHttp(httpd_req_t* req, httpd_err_code_t err)
 {
-    if (is_ap) {
+    if (ap_ready) {
         // Redirect captive portal checks (iOS/Android) to the Web UI root
         httpd_resp_set_status(req, "302 Found");
         httpd_resp_set_hdr(req, "Location", "http://192.168.4.1/");
@@ -659,6 +681,7 @@ void begin()
     // Load persisted settings from NVS flash (survives reflashing)
     loadPrefsOnce();
 
+    startAccessPoint();
     connectStation();
 
     // 1. Start plain HTTP server on port 80 (pinned to Core 0)
@@ -697,25 +720,29 @@ void handleClient()
         delay(150);
         ESP.restart();
     }
-    if (is_ap) {
+    if (ap_ready) {
         dns_server.processNextRequest();
     }
 }
 
-void startAccessPoint(const char* reason)
+void reconnectStation()
 {
-    wifi_err = reason;
-    Serial.printf("Starting AP (%s)\n", reason);
-    WiFi.disconnect(false);
-    WiFi.mode(WIFI_AP);
-    const IPAddress ap_ip(192, 168, 4, 1);
-    WiFi.softAPConfig(ap_ip, ap_ip, IPAddress(255, 255, 255, 0));
-    WiFi.softAP(AP_SSID, AP_PASSWORD, 1, false, 4);
-    dns_server.start(53, "*", ap_ip);
-    is_ap = true;
+    connectStation();
 }
 
-bool isApMode()            { return is_ap; }
+void setWifiStatus(const char* status)
+{
+    const String next = status ? String(status) : String("");
+    if (next != wifi_err) {
+        wifi_err = next;
+        scene_dirty = true;
+    }
+}
+
+bool isApReady()           { return ap_ready; }
+uint32_t apUpMs()          { return ap_up_ms; }
+bool hasClientRequested()  { return client_requested; }
+bool hasWifiCredentials()  { return wifi_ssid.length() > 0 && wifi_password.length() > 0; }
 SceneId selectedScene()    { return selected_scene; }
 bool showIp()              { return show_ip; }
 bool showCpuLoad()         { return show_cpu; }

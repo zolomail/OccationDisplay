@@ -8,9 +8,13 @@ namespace WebUi {
 
 void begin();
 void handleClient();
-void startAccessPoint(const char* reason);
+void reconnectStation();
+void setWifiStatus(const char* status);
 
-bool     isApMode();
+bool     isApReady();
+uint32_t apUpMs();
+bool     hasClientRequested();
+bool     hasWifiCredentials();
 SceneId  selectedScene();
 bool     showIp();
 bool     showCpuLoad();

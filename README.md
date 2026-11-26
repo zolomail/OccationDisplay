@@ -7,6 +7,11 @@ To upload use:
 To upload data files:
     pio run -t uploadfs
 
+To convert fonts run:
+    .\convert_fonts.cmd
+
+To convert pngs to SDF atlasses:
+    .\convert_sdf.cmd
 
 #TODO:
     EFFECTS AND OCCATION PLANNING

@@ -16,128 +16,22 @@ import argparse
 import glob
 import math
 import os
-import struct
-import zlib
 from typing import List, Tuple
-
-
-def _paeth(a: int, b: int, c: int) -> int:
-    p = a + b - c
-    pa = abs(p - a)
-    pb = abs(p - b)
-    pc = abs(p - c)
-    if pa <= pb and pa <= pc:
-        return a
-    if pb <= pc:
-        return b
-    return c
+from PIL import Image
 
 
 def load_png_mask(path: str) -> Tuple[int, int, List[List[bool]]]:
-    """Pure-Python PNG decoder returning (width, height, inside_mask[y][x])."""
-    with open(path, "rb") as f:
-        data = f.read()
+    """Load PNG via Pillow and return (width, height, inside_mask[y][x])."""
+    img = Image.open(path).convert("RGBA")
+    width, height = img.size
+    px = img.load()
+    has_transparent = any(px[x, y][3] < 255 for y in range(height) for x in range(width))
 
-    if data[:8] != b"\x89PNG\r\n\x1a\n":
-        raise ValueError(f"{path}: not a valid PNG file")
-
-    pos = 8
-    width = height = bit_depth = color_type = interlace = 0
-    palette: List[Tuple[int, int, int]] = []
-    trns = b""
-    idat = bytearray()
-
-    while pos + 12 <= len(data):
-        length = struct.unpack(">I", data[pos : pos + 4])[0]
-        ctype = data[pos + 4 : pos + 8]
-        payload = data[pos + 8 : pos + 8 + length]
-        pos += 12 + length
-
-        if ctype == b"IHDR":
-            width, height, bit_depth, color_type, _, _, interlace = struct.unpack(
-                ">IIBBBBB", payload
-            )
-        elif ctype == b"PLTE":
-            palette = [
-                (payload[i], payload[i + 1], payload[i + 2])
-                for i in range(0, len(payload), 3)
-            ]
-        elif ctype == b"tRNS":
-            trns = payload
-        elif ctype == b"IDAT":
-            idat.extend(payload)
-        elif ctype == b"IEND":
-            break
-
-    if interlace != 0:
-        raise ValueError(f"{path}: interlaced PNGs are not supported")
-    if bit_depth != 8:
-        raise ValueError(f"{path}: only 8-bit PNGs are supported (got {bit_depth})")
-
-    channels_map = {0: 1, 2: 3, 3: 1, 4: 2, 6: 4}
-    if color_type not in channels_map:
-        raise ValueError(f"{path}: unsupported color_type {color_type}")
-    bpp = channels_map[color_type]
-
-    raw = zlib.decompress(bytes(idat))
-    stride = width * bpp
-    rows: List[bytes] = []
-    prev = bytearray(stride)
-    idx = 0
-
-    for _ in range(height):
-        filt = raw[idx]
-        idx += 1
-        scan = bytearray(raw[idx : idx + stride])
-        idx += stride
-
-        if filt == 1:
-            for i in range(bpp, stride):
-                scan[i] = (scan[i] + scan[i - bpp]) & 0xFF
-        elif filt == 2:
-            for i in range(stride):
-                scan[i] = (scan[i] + prev[i]) & 0xFF
-        elif filt == 3:
-            for i in range(stride):
-                a = scan[i - bpp] if i >= bpp else 0
-                scan[i] = (scan[i] + ((a + prev[i]) >> 1)) & 0xFF
-        elif filt == 4:
-            for i in range(stride):
-                a = scan[i - bpp] if i >= bpp else 0
-                b = prev[i]
-                c = prev[i - bpp] if i >= bpp else 0
-                scan[i] = (scan[i] + _paeth(a, b, c)) & 0xFF
-        elif filt != 0:
-            raise ValueError(f"{path}: unknown PNG filter {filt}")
-
-        rows.append(bytes(scan))
-        prev = scan
-
-    has_alpha = color_type in (4, 6) or (color_type == 3 and len(trns) > 0)
     mask: List[List[bool]] = [[False] * width for _ in range(height)]
-
     for y in range(height):
-        row = rows[y]
         for x in range(width):
-            p = x * bpp
-            if color_type == 6:  # RGBA
-                inside = row[p + 3] >= 128
-            elif color_type == 4:  # Gray + Alpha
-                inside = row[p + 1] >= 128
-            elif color_type == 3:  # Indexed
-                ci = row[p]
-                if has_alpha:
-                    alpha = trns[ci] if ci < len(trns) else 255
-                    inside = alpha >= 128
-                else:
-                    r, g, b = palette[ci]
-                    inside = (r + g + b) >= 384
-            elif color_type == 2:  # RGB
-                inside = (row[p] + row[p + 1] + row[p + 2]) >= 128
-            else:  # Grayscale
-                inside = row[p] >= 128
-            mask[y][x] = inside
-
+            r, g, b, a = px[x, y]
+            mask[y][x] = (a >= 128) if has_transparent else ((r + g + b) >= 128)
     return width, height, mask
 
 

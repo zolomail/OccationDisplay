@@ -7,10 +7,7 @@
 
 enum class SceneId : uint8_t {
 	Welcome = 0,	//Must be first
-	Connecting,
 	SetupAp,
-	WifiUnknown,
-	WifiStopped,
 	Test,
 	NewYearsMidnight,
 	JanuaryDays,

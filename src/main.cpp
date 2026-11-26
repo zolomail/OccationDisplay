@@ -115,11 +115,6 @@ std::unique_ptr<Scene> createScene(SceneId id, MatrixPanel_I2S_DMA &display)
     auto scene = std::make_unique<Scene>(id, display);
 
     switch (id) {
-        case SceneId::Connecting:
-            scene->add_effect<ClearScreen>();
-            scene->add_effect<FlyingText>("Connecting...", XPOS_CENTER, YPOS_CENTER, 0, 0, Colors::ORANGE, TINY_WIDE_FONT);
-            break;
-
         case SceneId::Welcome:
             scene->add_effect<ClearScreen>(scene->color("Background Color", Colors::BLACK));
             scene->add_effect<Border>(2, Colors::WHITE, Colors::BLUE, BorderPattern::Dashed, 4, 1);
@@ -138,16 +133,6 @@ std::unique_ptr<Scene> createScene(SceneId id, MatrixPanel_I2S_DMA &display)
             scene->add_effect<FlyingText>(String("IpAdr: ") + WiFi.softAPIP().toString(), 35, 24, 0, 0, Colors::CYAN, TINY_WIDE_FONT);
             break;
         }
-
-        case SceneId::WifiUnknown:
-            scene->add_effect<ClearScreen>();
-            scene->add_effect<FlyingText>("Unknown SSID", XPOS_CENTER, 28, 0, 0, Colors::RED, TINY_WIDE_FONT);
-            break;
-
-        case SceneId::WifiStopped:
-            scene->add_effect<ClearScreen>();
-            scene->add_effect<FlyingText>("WiFi Stopped", XPOS_CENTER, 28, 0, 0, Colors::RED, TINY_WIDE_FONT);
-            break;
 
         case SceneId::WebUiQr: {
             const String ip_str = WiFi.localIP().toString();
@@ -334,22 +319,21 @@ std::unique_ptr<Scene> createScene(SceneId id, MatrixPanel_I2S_DMA &display)
             break;
 
         case SceneId::SDFTest: {
-            static constexpr const SdfAtlas* SDF_ATLASES[] = {
+            scene->add_effect<ClearScreen>(scene->color("Background Color", Colors::BLACK));
+            static constexpr const SdfAtlas *SDF_ATLASES[] = {
                 &SDF_STAR, &SDF_SHAMROCK, &SDF_DIAMOND, &SDF_HEART
             };
             const uint8_t atlas_idx = scene->select("Atlas", 0, {
                 "Star", "Shamrock", "Diamond", "Heart"
             });
             const SdfAtlas& atlas = *SDF_ATLASES[atlas_idx < 4 ? atlas_idx : 0];
-            const uint16_t color = scene->color("Color", Colors::YELLOW);
             const float scale = static_cast<float>(scene->number("Scale (%)", 100, 25, 200)) / 100.0f;
             const float spin = static_cast<float>(scene->number("Spin Speed", 2, -15, 15));
             const float outline = static_cast<float>(scene->number("Outline (x0.5px)", 3, 0, 12)) * 0.5f;
-            scene->add_effect<ClearScreen>(scene->color("Background Color", Colors::BLACK));
-            scene->add_effect<SDFEffect>(atlas, color, XPOS_CENTER, YPOS_CENTER, scale, 0.0f, spin, 0, 0, outline);
-            scene->add_effect<SDFEffect>(SDF_STAR, Colors::YELLOW, XPOS_1_QUART, YPOS_CENTER, scale, 0.0f, spin, 7, 3, outline);
-            scene->add_effect<SDFEffect>(SDF_HEART, Colors::RED, XPOS_3_QUART, YPOS_CENTER, scale, 0.0f, spin, -9, -3, outline);
-            scene->add_effect<SDFEffect>(SDF_SHAMROCK, Colors::GREEN, XPOS_CENTER, YPOS_CENTER, scale, 0.0f, spin, -5, 5, outline);
+            scene->add_effect<SDFEffect>(atlas, scene->color("Color Selected", Colors::YELLOW), XPOS_CENTER, YPOS_CENTER, scale, 0.0f, spin, 0, 0, outline);
+            scene->add_effect<SDFEffect>(SDF_STAR, scene->color("Color Star", Colors::YELLOW), XPOS_1_QUART, YPOS_CENTER, scale, 0.0f, spin, 7, 3, outline);
+            scene->add_effect<SDFEffect>(SDF_HEART, scene->color("Color Heart", Colors::RED), XPOS_3_QUART, YPOS_CENTER, scale, 0.0f, spin, -9, -3, outline);
+            scene->add_effect<SDFEffect>(SDF_SHAMROCK, scene->color("Color Shamrock", Colors::GREEN), XPOS_CENTER, YPOS_CENTER, scale, 0.0f, spin, -5, 5, outline);
             break;
         }
 
@@ -398,59 +382,57 @@ SceneId selectDateScene(const tm& t)
     return SceneId::NormalDays;
 }
 
-SceneId checkWifiState()
+void updateWifiBackground()
 {
-    static uint32_t connect_start_ms = 0;
-
-    switch (WiFi.status())
-    {
-        case WL_CONNECTED:
-            connect_start_ms = 0;
-            return SceneId::None;
-
-        case WL_IDLE_STATUS:
-            if (connect_start_ms == 0) connect_start_ms = millis();
-            return SceneId::Welcome;
-
-        case WL_NO_SSID_AVAIL:
-            connect_start_ms = 0;
-            WebUi::startAccessPoint("Couldn't find SSID");
-            active_scene_id = SceneId::None;
-            return SceneId::SetupAp;
-
-        case WL_CONNECT_FAILED:
-            connect_start_ms = 0;
-            WebUi::startAccessPoint("Bad password!");
-            active_scene_id = SceneId::None;
-            return SceneId::SetupAp;
-
-        case WL_CONNECTION_LOST:
-            connect_start_ms = 0;
-            WebUi::startAccessPoint("Connection lost!");
-            active_scene_id = SceneId::None;
-            return SceneId::SetupAp;
-
-        case WL_DISCONNECTED:
-            if (connect_start_ms == 0) {
-                connect_start_ms = millis();
-            } else if (millis() - connect_start_ms >= Config::WIFI_CONNECT_TIMEOUT_MS) {
-                connect_start_ms = 0;
-                WebUi::startAccessPoint("Wi-Fi timeout");
-                active_scene_id = SceneId::None;
-                return SceneId::SetupAp;
-            }
-            return SceneId::Connecting;
-
-        case WL_NO_SHIELD:
-        case WL_SCAN_COMPLETED:
-            connect_start_ms = 0;
-            return SceneId::WifiUnknown;
-
-        case WL_STOPPED:
-            connect_start_ms = 0;
-            return SceneId::WifiStopped;
+    if (!WebUi::hasWifiCredentials()) {
+        return;
     }
-    return SceneId::None;
+
+    static uint32_t connect_start_ms    = 0;
+    static uint32_t retry_wait_start_ms = 0;
+    const wl_status_t st = WiFi.status();
+
+    if (st == WL_CONNECTED) {
+        connect_start_ms    = 0;
+        retry_wait_start_ms = 0;
+        WebUi::setWifiStatus("");
+        return;
+    }
+
+    const char* err_msg = nullptr;
+    switch (st) {
+        case WL_NO_SSID_AVAIL:   err_msg = "Couldn't find SSID"; break;
+        case WL_CONNECT_FAILED:  err_msg = "Bad password!";      break;
+        case WL_CONNECTION_LOST: err_msg = "Connection lost!";   break;
+        case WL_DISCONNECTED:
+        case WL_IDLE_STATUS:
+            if (retry_wait_start_ms == 0) {
+                if (connect_start_ms == 0) {
+                    connect_start_ms = millis();
+                } else if (millis() - connect_start_ms >= Config::WIFI_CONNECT_TIMEOUT_MS) {
+                    err_msg = "Wi-Fi timeout";
+                } else {
+                    WebUi::setWifiStatus("Connecting...");
+                    return;
+                }
+            }
+            break;
+        default:
+            err_msg = "Wi-Fi error";
+            break;
+    }
+
+    if (retry_wait_start_ms == 0) {
+        if (err_msg) {
+            WebUi::setWifiStatus(err_msg);
+        }
+        connect_start_ms    = 0;
+        retry_wait_start_ms = millis();
+    } else if (millis() - retry_wait_start_ms >= 30000UL) {
+        retry_wait_start_ms = 0;
+        connect_start_ms    = millis();
+        WebUi::reconnectStation();
+    }
 }
 
 } // namespace
@@ -635,10 +617,25 @@ void loop()
 {
     const uint32_t frame_start_us = micros();
 
-    if (WebUi::isApMode()) {
+    updateWifiBackground();
+
+    static bool     ever_connected = false;
+    static uint32_t wifi_lost_ms   = 0;
+    const bool      wifi_connected = (WiFi.status() == WL_CONNECTED);
+    if (wifi_connected) {
+        ever_connected = true;
+        wifi_lost_ms   = 0;
+    } else if (ever_connected && wifi_lost_ms == 0) {
+        wifi_lost_ms = millis();
+    }
+
+    const bool initial_ap_qr = !wifi_connected && !WebUi::hasClientRequested() && (millis() - WebUi::apUpMs() < 30000UL);
+    const bool lost_wifi_qr  = ever_connected && !wifi_connected && (wifi_lost_ms != 0) && (millis() - wifi_lost_ms >= 60000UL);
+
+    if (!WebUi::isApReady()) {
+        renderScene(SceneId::Welcome);
+    } else if (initial_ap_qr || lost_wifi_qr) {
         renderScene(SceneId::SetupAp);
-    } else if (SceneId id = checkWifiState(); id != SceneId::None) {
-        renderScene(id);
     } else {
         const time_t now = time(nullptr);
         localtime_r(&now, &current_time);
@@ -648,7 +645,7 @@ void loop()
         renderScene((override_id != SceneId::None) ? override_id : auto_id);
 
         if (WebUi::showIp()) {
-            const IPAddress ip = WiFi.localIP();
+            const IPAddress ip = (WiFi.status() == WL_CONNECTED) ? WiFi.localIP() : WiFi.softAPIP();
             if (!ip_overlay || ip != cached_ip) {
                 cached_ip  = ip;
                 ip_overlay = std::unique_ptr<FlyingText>(
