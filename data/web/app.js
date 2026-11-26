@@ -94,14 +94,14 @@ function buildScheduleFieldsHtml(o) {
   return '<h3>Occasion Schedule</h3>' +
     '<div class="field"><label for="occ-label">Label (max 16 chars)</label>' +
       '<input id="occ-label" maxlength="16" value="' + escHtml(o.label) + '"></div>' +
-    '<div class="field"><label>Start (Month / Day / Hour / Min)</label><div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;">' +
-      '<input id="occ-sm" type="number" min="1" max="12" value="' + o.sm + '">' +
+    '<div class="field"><label>Start (Day / Month / Hour / Min)</label><div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;">' +
       '<input id="occ-sd" type="number" min="1" max="31" value="' + o.sd + '">' +
+      '<input id="occ-sm" type="number" min="1" max="12" value="' + o.sm + '">' +
       '<input id="occ-sh" type="number" min="0" max="23" value="' + o.sh + '">' +
       '<input id="occ-smin" type="number" min="0" max="59" value="' + o.smin + '"></div></div>' +
-    '<div class="field"><label>End (Month / Day / Hour / Min)</label><div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;">' +
-      '<input id="occ-em" type="number" min="1" max="12" value="' + o.em + '">' +
+    '<div class="field"><label>End (Day / Month / Hour / Min)</label><div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;">' +
       '<input id="occ-ed" type="number" min="1" max="31" value="' + o.ed + '">' +
+      '<input id="occ-em" type="number" min="1" max="12" value="' + o.em + '">' +
       '<input id="occ-eh" type="number" min="0" max="23" value="' + o.eh + '">' +
       '<input id="occ-emin" type="number" min="0" max="59" value="' + o.emin + '"></div></div>' +
     '<label class="toggle-row" style="margin-top:8px;">' +
@@ -298,7 +298,7 @@ function sceneLabelById(id) {
 }
 
 function occSummary(o) {
-  let s = o.sm + '/' + o.sd + ' ' + pad2(o.sh) + ':' + pad2(o.smin) + ' - ' + o.em + '/' + o.ed + ' ' + pad2(o.eh) + ':' + pad2(o.emin);
+  let s = o.sd + '/' + o.sm + ' ' + pad2(o.sh) + ':' + pad2(o.smin) + ' - ' + o.ed + '/' + o.em + ' ' + pad2(o.eh) + ':' + pad2(o.emin);
   if (o.recurring) {
     const days = WDAY_BITS.filter(([b]) => (o.wd & b) !== 0).map(([, n]) => n).join(',');
     s += ' | ' + (days || 'None') + ' ' + pad2(o.fh) + ':' + pad2(o.fmin) + '-' + pad2(o.th) + ':' + pad2(o.tmin);
