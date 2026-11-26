@@ -31,7 +31,7 @@
 #include "effects/WaveSim.h"
 #include "effects/BumpMap.h"
 #include "effects/Hearts.h"
-#include "effects/Cube3D.h"
+#include "effects/Object3D.h"
 #include "effects/QrCode.h"
 #include "effects/Border.h"
 #include "effects/GolfHoleInOne.h"
@@ -218,11 +218,18 @@ std::unique_ptr<Scene> createScene(SceneId id, MatrixPanel_I2S_DMA &display)
             scene->add_effect<ScrollText>(scene->text("Scroll Text", Config::DEFAULT_SCROLL), YPOS_3_QUART, -10, scene->color("Scroll Color", Colors::RED), scene->font("Scroll Font", TINY_WIDE_FONT));
             break;
 
-        case SceneId::CubeEffect:
+        case SceneId::Object3DEffect: {
+            const uint8_t shape_idx = scene->select("Shape", 0, {
+                "Cube", "Pyramid", "Octahedron", "Diamond", "Icosahedron", "Torus"
+            });
+            const float size      = static_cast<float>(scene->number("Size", 8, 4, 14));
+            const bool  show_box  = (scene->select("Show 3D Box", 1, { "No", "Yes" }) == 1);
+            const bool  wireframe = (scene->select("Wireframe", 0, { "No", "Yes" }) == 1);
             scene->add_effect<ClearScreen>(scene->color("Background Color", Colors::BLACK));
             scene->add_effect<Stars>(25);
-            scene->add_effect<Cube3D>(8.5f, false);
+            scene->add_effect<Object3D>(size, wireframe, static_cast<MeshShape>(shape_idx), show_box);
             break;
+        }
 
         case SceneId::ChristmasDays:
             scene->add_effect<ClearScreen>(scene->color("Background Color", Colors::BLACK));

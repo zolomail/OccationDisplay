@@ -23,7 +23,7 @@ enum class SceneId : uint8_t {
 	WaterEffect,
 	BumpMapEffect,
 	ValentinesDay,
-	CubeEffect,
+	Object3DEffect,
 	WebUiQr,
 	BorderTest,
 	ScrollerTest,

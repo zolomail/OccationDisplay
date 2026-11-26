@@ -26,19 +26,25 @@ To convert pngs to SDF atlasses:
     - Add configuration for all of the effects 
 
     - More effects:
-        Animated sprites (fish, birds)
         Christmas tree
+        Santa and sley
         Stars warpspace
+        Water/waves seen from side (with six axis could flow)
+        Sommerday (fields trees birds)
+        Raycaster in full display width
+
+    - Occations:
+        Wedding days
+        Aniversery
+        Is it friday?
 
     - More Scenes
         Full screen weather
-        Easter
-        Saint Patrics
-        April fools
-        Sankt Hans
-        Mortens Aften
-        Wedding days
-        Is it friday?
+        Easter (Eggs, bunny, easterlillies)
+        Saint Patrics (Shamrocks, nome)
+        April fools ??
+        Sankt Hans (Bon fire, witch)
+        Mortens Aften (Ducks)
 
     - Allow setting outline color for for Hearts and Bubbles 
     - Change "Couldn't connect" etc font so it doesn't spill outside display whehn connect failed
