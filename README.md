@@ -24,12 +24,15 @@ To convert pngs to SDF atlasses:
     - Dirty rectangel updating...(Fullscreen update every frame max out cpu)
 
     - More effects:
-        Christmas tree
         Santa and sley
         Stars warpspace
         Water/waves seen from side (with six axis could flow)
         Sommerday (fields trees birds)
         Raycaster in full display width
+        Birthday flags
+        Confetti
+        Leaves in the wind (fall)
+
 
     - Occasions:
         Wedding days
@@ -68,3 +71,4 @@ Done:
     - Fix "showing new years eve" when no date time
     - Add user configurable scenes (replace selectDateScene ) the details  specified
     - Daily/Weekly Reminders (weekend/bedtime)?
+    - Christmas tree

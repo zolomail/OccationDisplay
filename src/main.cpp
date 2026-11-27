@@ -241,12 +241,12 @@ std::unique_ptr<Scene> createScene(SceneId id, MatrixPanel_I2S_DMA &display)
 
         case SceneId::ChristmasEve:
             scene->add_effect<ClearScreen>(scene->color("Background Color", Colors::BLACK));
+            scene->add_effect<SnowScape>(static_cast<uint8_t>(scene->number("Snow Flakes", 20, 0, 200)), static_cast<int16_t>(scene->number("Snow Height", 8, 1, 31)));
+            scene->add_effect<FlyingPng>("/bitmaps/christmastree.png", XPOS_CENTER, 0);
             scene->add_effect<Present>(-20, 5, 5, Colors::GREEN, Colors::RED);
             scene->add_effect<Present>(-10, 7, 3, Colors::CYAN, Colors::RED);
             scene->add_effect<Present>(-15, 7, 5, Colors::WHITE, Colors::YELLOW);
             scene->add_effect<Present>(-35, 11, 9, Colors::PURPLE, Colors::GREEN);
-            scene->add_effect<SnowScape>(static_cast<uint8_t>(scene->number("Snow Flakes", 20, 0, 200)), static_cast<int16_t>(scene->number("Snow Height", 8, 1, 31)));
-            scene->add_effect<Hearts>(8);
             scene->add_effect<FlyingText>(scene->text("Message", "Merry Christmas"), 0, 0, 1, 1, scene->color("Message Color", Colors::RED), scene->font("Message Font", NORMAL_FONT));
             break;
 
