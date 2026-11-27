@@ -28,7 +28,8 @@
 #include "effects/Blood.h"
 #include "effects/BubblesInt.h"
 #include "effects/Flames.h"
-#include "effects/WeatherOverlay.h"
+#include "effects/WeatherIcon.h"
+#include "effects/WeatherTemp.h"
 #include "effects/WaveSim.h"
 #include "effects/BumpMap.h"
 #include "effects/Hearts.h"
@@ -211,14 +212,16 @@ std::unique_ptr<Scene> createScene(SceneId id, MatrixPanel_I2S_DMA &display)
             scene->add_effect<ClearScreen>(scene->color("Background Color", Colors::BLACK));
             scene->add_effect<ScrollText>(scene->text("Scroll Text", Config::DEFAULT_SCROLL), YPOS_BOTTOM, -10, scene->color("Scroll Color", Colors::RED), scene->font("Scroll Font", TINY_WIDE_FONT));
             scene->add_effect<ShowTime>(current_time, XPOS_CENTER, YPOS_CENTER, 0, 0, scene->color("Clock Color", Colors::BLUE), scene->font("Clock Font", NORMAL_FONT), "yyyy-mm-dd hh:mm:ss");
-            scene->add_effect<WeatherOverlay>(XPOS_CENTER, 0, scene->color("Weather Color", Colors::CYAN));
+            scene->add_effect<WeatherIcon>(XPOS_CENTER - 14, 0);
+            scene->add_effect<WeatherTemp>(XPOS_CENTER + 14, 5, scene->color("Weather Color", Colors::CYAN));
             break;
 
         case SceneId::JustSnow:
             scene->add_effect<ClearScreen>(scene->color("Background Color", Colors::BLACK));
             scene->add_effect<ScrollText>(scene->text("Scroll Text", Config::DEFAULT_SCROLL), YPOS_CENTER, -10, scene->color("Scroll Color", Colors::RED), scene->font("Scroll Font", TINY_WIDE_FONT));
             scene->add_effect<SnowScape>(static_cast<uint8_t>(scene->number("Snow Flakes", 50, 0, 200)), static_cast<int16_t>(scene->number("Snow Height", 10, 1, 31)));
-            scene->add_effect<WeatherOverlay>(XPOS_RIGHT, 0, scene->color("Weather Color", Colors::CYAN));
+            scene->add_effect<WeatherIcon>(XPOS_RIGHT - 28, 0);
+            scene->add_effect<WeatherTemp>(XPOS_RIGHT, 5, scene->color("Weather Color", Colors::CYAN));
             break;
 
         case SceneId::Aquatic:
