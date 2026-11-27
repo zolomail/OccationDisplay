@@ -8,20 +8,20 @@ namespace {
 
 constexpr int MAP_W = 16;
 constexpr int MAP_H = 16;
-constexpr int TEX_SIZE = 8;
+constexpr int TEX_SIZE = 16;
 
 // 0 = empty, 1 = brick, 2 = stone, 3 = tech blue, 4 = gold/wood
 constexpr uint8_t MAZE_MAP[MAP_H][MAP_W] = {
 	{1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1},
 	{1,0,0,0,0,2,0,0,0,0,0,3,0,0,0,1},
-	{1,0,2,2,0,2,0,3,3,3,0,3,0,4,0,1},
+	{1,0,2,2,0,2,0,3,5,3,0,3,0,4,0,1},
 	{1,0,2,0,0,0,0,0,0,3,0,0,0,4,0,1},
 	{1,0,0,0,4,4,0,2,0,0,0,2,2,4,0,1},
 	{1,1,1,0,4,0,0,2,0,1,0,0,0,0,0,1},
 	{1,0,0,0,0,0,3,2,0,1,1,1,0,3,0,1},
 	{1,0,3,3,0,0,3,0,0,0,0,1,0,3,0,1},
 	{1,0,3,0,0,2,0,0,4,4,0,0,0,0,0,1},
-	{1,0,0,0,2,2,0,0,4,0,0,2,0,1,0,1},
+	{1,0,0,0,2,2,0,0,5,0,0,2,0,1,0,1},
 	{1,2,0,0,0,0,0,1,0,0,3,2,0,1,0,1},
 	{1,0,0,4,4,0,0,1,0,0,3,0,0,0,0,1},
 	{1,0,4,4,0,0,2,1,0,2,0,0,4,4,0,1},
@@ -30,28 +30,37 @@ constexpr uint8_t MAZE_MAP[MAP_H][MAP_W] = {
 	{1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1}
 };
 
-// Procedural 8x8 RGB565 texture texel (high-contrast, alias-free blocks)
+// Procedural 16x16 RGB565 texture texel (pure saturated colors + true black seams for LED contrast)
 inline uint16_t sampleWallTexel(uint8_t wall_type, int tx, int ty)
 {
 	switch (wall_type) {
-		case 1: { // Red brick with dark mortar
-			const bool mortar = (ty == 0 || ty == 4) ||
-			                    ((ty < 4) ? (tx == 0) : (tx == 4));
-			return mortar ? color565(35, 25, 25) : color565(245, 45, 25);
+		case 1: { // Pure red brick with 16x16 staggered black mortar
+			const bool mortar = ((ty & 3) == 0) ||
+			                    (((ty & 4) == 0) ? (tx == 0 || tx == 8) : (tx == 4 || tx == 12));
+			return mortar ? color565(0, 0, 0) : color565(255, 0, 0);
 		}
-		case 2: { // Crisp light stone blocks with dark seams
-			const bool seam = (tx == 0 || ty == 0 || (ty == 4 && tx >= 3));
-			return seam ? color565(30, 35, 45) : color565(195, 205, 220);
+		case 2: { // Crisp 16x16 silver/white stone blocks with black seams
+			const bool seam = (tx == 0 || ty == 0 || (ty == 8) ||
+			                   ((ty < 8) ? (tx == 9) : (tx == 5 || tx == 13)));
+			return seam ? color565(0, 0, 0) : color565(210, 220, 255);
 		}
-		case 3: { // Wolfenstein blue tech panel with glowing cyan rivets
-			if (tx == 0 || tx == 7 || ty == 0 || ty == 7) return color565(15, 35, 100);
-			if ((tx == 2 || tx == 5) && (ty == 2 || ty == 5)) return color565(140, 255, 255);
-			return color565(40, 125, 255);
+		case 3: { // Wolfenstein 16x16 blue tech panel with black frame, vent & cyan rivets
+			if (tx == 0 || tx == 15 || ty == 0 || ty == 15) return color565(0, 0, 0);
+			if ((tx == 3 || tx == 12) && (ty == 3 || ty == 12)) return color565(0, 255, 255);
+			if ((ty == 7 || ty == 8) && tx >= 4 && tx <= 11) return color565(0, 0, 0);
+			return color565(0, 70, 255);
 		}
-		default: { // Gold / warm wood panel
-			if (tx == 0 || tx == 7 || ty == 0 || ty == 7) return color565(85, 40, 10);
-			if (ty == 3 || ty == 4) return color565(255, 205, 45);
-			return color565(225, 145, 25);
+		case 4: { // 16x16 Gold / amber panel with black frame & gold cross
+			if (tx == 0 || tx == 15 || ty == 0 || ty == 15) return color565(0, 0, 0);
+			if (tx == 7 || tx == 8 || ty == 7 || ty == 8) return color565(255, 220, 0);
+			return color565(255, 110, 0);
+		}
+		default:{ // 16x16 
+			if (tx == 0 || tx == 15 || ty == 0 || ty == 15) return color565(0, 0, 0);
+			int r = (7-tx)*(7-tx)+(7-ty)*(7-ty);
+			if ( r < 17) return color565(220, 0, 220);
+			if ( r < 19) return color565(0, 0, 0);
+			return color565(50, 50, 200);
 		}
 	}
 }
@@ -205,17 +214,21 @@ void Raycaster::render()
 	const int bob_y = static_cast<int>(sinf(m_walk_phase) * 0.6f);
 	const int horizon = (h / 2) + bob_y;
 
-	// Fill dark ceiling and floor gradients once per row so walls pop
+	// Fill very dark ceiling and floor gradients so walls pop with high contrast
 	for (int y = 0; y < h; ++y) {
-		uint16_t row_col;
+		uint16_t row_col = 0;
 		if (y < horizon) {
 			const int d = horizon - y;
-			const uint8_t v = static_cast<uint8_t>(std::min(90, d * 5));
-			row_col = color565(0, v >> 3, v >> 1);
+			if (d > 4) {
+				const uint8_t v = static_cast<uint8_t>(std::min(28, (d - 4) * 3));
+				row_col = color565(0, 0, v);
+			}
 		} else {
 			const int d = y - horizon;
-			const uint8_t v = static_cast<uint8_t>(std::min(96, d * 6));
-			row_col = color565(v >> 1, v >> 2, v >> 3);
+			if (d > 4) {
+				const uint8_t v = static_cast<uint8_t>(std::min(32, (d - 4) * 3));
+				row_col = color565(v, 0, 0);
+			}
 		}
 		uint16_t *row_ptr = m_fb.data() + static_cast<size_t>(y) * w;
 		for (int x = 0; x < w; ++x) {
@@ -296,12 +309,12 @@ void Raycaster::render()
 			tx = (TEX_SIZE - 1) - tx;
 		}
 
-		// Distance + side shading (keep close/mid walls bright & crisp)
-		int shade = (perp_dist <= 2.0f)
+		// Distance + side shading (fade far corridors toward black)
+		int shade = (perp_dist <= 1.8f)
 			? 255
-			: static_cast<int>(255.0f / (1.0f + (perp_dist - 2.0f) * 0.25f));
-		if (side) shade = (shade * 155) >> 8;
-		if (shade < 56) shade = 56;
+			: static_cast<int>(255.0f / (1.0f + (perp_dist - 1.8f) * 0.42f));
+		if (side) shade = (shade * 145) >> 8;
+		if (shade < 16) shade = 16;
 		const uint8_t shade_u8 = static_cast<uint8_t>(shade);
 
 		const float tex_step = static_cast<float>(TEX_SIZE) / static_cast<float>(line_h);
