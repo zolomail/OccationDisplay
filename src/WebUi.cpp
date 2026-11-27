@@ -91,6 +91,7 @@ constexpr SceneOption SCENE_OPTIONS[] = {
     { SceneId::BumpMapEffect,    "BumpMapEffect"    },
     { SceneId::Object3DEffect,   "3D Object"        },
     { SceneId::RaycasterEffect,  "Raycaster 3D"     },
+    { SceneId::TreeSliceEffect,  "Tree Slice 3D"    },
     { SceneId::BorderTest,       "Border Test"      },
     { SceneId::ScrollerTest,     "Scroller Test"    },
     { SceneId::TestAnimatedPng,  "Animated PNG"     },

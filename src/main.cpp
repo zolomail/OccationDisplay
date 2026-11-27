@@ -38,6 +38,7 @@
 #include "effects/GolfHoleInOne.h"
 #include "effects/SDFEffect.h"
 #include "effects/Raycaster.h"
+#include "effects/TreeSlice.h"
 
 namespace {
 // =========================================================================
@@ -171,6 +172,14 @@ std::unique_ptr<Scene> createScene(SceneId id, MatrixPanel_I2S_DMA &display)
 
         case SceneId::RaycasterEffect:
             scene->add_effect<Raycaster>(static_cast<float>(scene->number("Walk Speed", 45, 10, 120)) * 0.001f);
+            break;
+
+        case SceneId::TreeSliceEffect:
+            scene->add_effect<TreeSlice>(
+                static_cast<float>(scene->number("Pan Speed", 12, 0, 50)) * 0.001f,
+                static_cast<float>(scene->number("Rotate Speed", 35, 0, 100)) * 0.001f,
+                static_cast<int16_t>(scene->number("Tree Height", 180, 64, 320))
+            );
             break;
 
         case SceneId::Test:
