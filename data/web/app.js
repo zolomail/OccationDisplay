@@ -356,7 +356,7 @@ function renderOccasionsList() {
   occasions.forEach((o, idx) => {
     h += '<div class="occ-item" data-occ-idx="' + idx + '" style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 4px;border-bottom:1px solid rgba(255,255,255,0.08);cursor:pointer;">' +
          '<div style="min-width:0;flex:1;">' +
-           '<div><b>#' + (idx + 1) + ' ' + escHtml(o.label) + '</b> &rarr; ' + escHtml(sceneLabelById(o.scene_id)) + '</div>' +
+           '<div><b>' + escHtml(o.label) + '</b> &rarr; ' + escHtml(sceneLabelById(o.scene_id)) + '</div>' +
            '<div class="hint" style="margin:2px 0 0;">' + escHtml(occSummary(o)) + '</div>' +
          '</div>' +
          '<div style="display:flex;gap:4px;flex-shrink:0;">' +

@@ -37,6 +37,7 @@
 #include "effects/Border.h"
 #include "effects/GolfHoleInOne.h"
 #include "effects/SDFEffect.h"
+#include "effects/Raycaster.h"
 
 namespace {
 // =========================================================================
@@ -168,6 +169,10 @@ std::unique_ptr<Scene> createScene(SceneId id, MatrixPanel_I2S_DMA &display)
 //          scene->add_effect<FlyingPng>("/bitmaps/trackman.png", 10, 4, 8, 4, true, false);
             break;
 
+        case SceneId::RaycasterEffect:
+            scene->add_effect<Raycaster>(static_cast<float>(scene->number("Walk Speed", 45, 10, 120)) * 0.001f);
+            break;
+
         case SceneId::Test:
             scene->add_effect<ClearScreen>(scene->color("Background Color", Colors::BLACK));
             scene->add_effect<Stars>();
@@ -221,13 +226,11 @@ std::unique_ptr<Scene> createScene(SceneId id, MatrixPanel_I2S_DMA &display)
             break;
 
         case SceneId::Object3DEffect: {
-            const uint8_t shape_idx = scene->select("Shape", 0, {
-                "Cube", "Pyramid", "Octahedron", "Diamond", "Icosahedron", "Torus"
-            });
+            scene->add_effect<ClearScreen>(scene->color("Background Color", Colors::BLACK));
+            const uint8_t shape_idx = scene->select("Shape", 0, { "Cube", "Pyramid", "Octahedron", "Diamond", "Icosahedron", "Torus" });
             const float size      = static_cast<float>(scene->number("Size", 8, 4, 14));
             const bool  show_box  = (scene->select("Show 3D Box", 1, { "No", "Yes" }) == 1);
             const bool  wireframe = (scene->select("Wireframe", 0, { "No", "Yes" }) == 1);
-            scene->add_effect<ClearScreen>(scene->color("Background Color", Colors::BLACK));
             scene->add_effect<Stars>(25);
             scene->add_effect<Object3D>(size, wireframe, static_cast<MeshShape>(shape_idx), show_box);
             break;

@@ -90,6 +90,7 @@ constexpr SceneOption SCENE_OPTIONS[] = {
     { SceneId::WaterEffect,      "WaterEffect"      },
     { SceneId::BumpMapEffect,    "BumpMapEffect"    },
     { SceneId::Object3DEffect,   "3D Object"        },
+    { SceneId::RaycasterEffect,  "Raycaster 3D"     },
     { SceneId::BorderTest,       "Border Test"      },
     { SceneId::ScrollerTest,     "Scroller Test"    },
     { SceneId::TestAnimatedPng,  "Animated PNG"     },

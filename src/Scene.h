@@ -31,6 +31,7 @@ enum class SceneId : uint8_t {
 	SDFTest,
 	Test5,
 	TrackmanTM5Beta,
+	RaycasterEffect,
 	None	// Must be last
 };
 
