@@ -304,7 +304,7 @@ std::unique_ptr<Scene> createScene(SceneId id, MatrixPanel_I2S_DMA &display)
             scene->add_effect<Present>(-15, 7, 5, Colors::WHITE, Colors::YELLOW);
             scene->add_effect<Present>(-35, 11, 9, Colors::PURPLE, Colors::GREEN);
             scene->add_effect<FlyingText>(scene->text("Message", "Happy birthday"), 20, 10, -2, -1, scene->color("Message Color", Colors::RED), scene->font("Message Font", NORMAL_FONT));
-            scene->add_effect<FlyingText>(scene->text("Name", "ERIK"), 0, 0, 1, 1, scene->color("Name Color", Colors::BLUE), scene->font("Name Font", NORMAL_FONT));
+            scene->add_effect<FlyingText>(scene->text("Name", "<name>"), 0, 0, 1, 1, scene->color("Name Color", Colors::BLUE), scene->font("Name Font", NORMAL_FONT));
             scene->add_effect<FlyingText>(String(age) + " \x86r", 64, 16, -1, 1, scene->color("Age Color", Colors::CYAN), scene->font("Age Font", NORMAL_FONT));
             break;
         }
