@@ -42,6 +42,26 @@ OccasionEntry makeDateEntry(
     return e;
 }
 
+OccasionEntry makeDateEntry(
+    const char* label,
+    int8_t esd, uint8_t sh, uint8_t smin,
+    int8_t eed, uint8_t eh, uint8_t emin,
+    SceneId sid)
+{
+    OccasionEntry e;
+    e.label             = String(label).substring(0, 24);
+    e.recurring         = false;
+    e.easter_offset     = true;
+    e.easter_start_days = esd;
+    e.start_hour        = sh;
+    e.start_min         = smin;
+    e.easter_end_days   = eed;
+    e.end_hour          = eh;
+    e.end_min           = emin;
+    e.scene_id          = sid;
+    return e;
+}
+
 std::vector<OccasionEntry> buildDefaultEntries()
 {
     std::vector<OccasionEntry> list;
@@ -50,15 +70,7 @@ std::vector<OccasionEntry> buildDefaultEntries()
     list.push_back(makeDateEntry("January",       1,  1, 0, 0,  1, 31, 23, 59, SceneId::JanuaryDays));
     list.push_back(makeDateEntry("Valentines",    2, 14, 0, 0,  2, 14, 23, 59, SceneId::Aquatic));
     list.push_back(makeDateEntry("St Patrick's Day", 3, 17, 0, 0, 3, 17, 23, 59, SceneId::StPatricksDay));
-    {
-        OccasionEntry easter;
-        easter.label             = "Easter";
-        easter.easter_offset     = true;
-        easter.easter_start_days = -3;
-        easter.easter_end_days   = 1;
-        easter.scene_id          = SceneId::Easter;
-        list.push_back(std::move(easter));
-    }
+    list.push_back(makeDateEntry("Easter",       -3,  0, 0,     1, 23, 59,     SceneId::Easter));
     list.push_back(makeDateEntry("Halloween",    10, 16, 0, 0, 11,  1,  7, 59, SceneId::Halloween));
     list.push_back(makeDateEntry("November Snow",11,  1, 0, 0, 11, 30, 23, 59, SceneId::JustSnow));
     list.push_back(makeDateEntry("Christmas Eve",12, 24, 0, 0, 12, 24, 23, 59, SceneId::ChristmasEve));

@@ -38,17 +38,15 @@ To convert pngs to SDF atlasses:
             Hail
             Sunny light clouds
             Cloudy
-
-
-
+            blooming flowers
+            tree with buds/small leaves (spring)
 
     - More Scenes
-        Easter (Eggs, bunny, easterlillies)
         Sankt Hans (Bon fire, witch)
         Mortens Aften (Ducks)
         April fools ??
         Wedding days
-        Aniversery
+        Aniverseries
         Is it friday?
 
 
@@ -80,3 +78,4 @@ Done:
     - 3D Christmaas tree (treeslice)
     - Seperate weather and temp effect
     - Saint Patrics (Shamrocks, gnome)
+    - Easter (Eggs, bunny, easterlillies)
