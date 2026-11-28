@@ -14,7 +14,7 @@ To convert pngs to SDF atlasses:
     .\convert_sdf.cmd
 
 #TODO:
-    - Add configuration for all of the effects 
+    - Add configuration for all of the effects (go thru all effects and add configuration params)
     - Allow setting outline color for for Hearts and Bubbles 
     - Change "Couldn't connect" etc font so it doesn't spill outside display whehn connect failed
     - Use dual wifi mode and try connecting to wifi when valid ssid and pwd exists
@@ -28,24 +28,20 @@ To convert pngs to SDF atlasses:
         Stars warpspace
         Water/waves seen from side (with six axis could flow)
         Sommerday (fields trees birds)
-        Raycaster in full display width
         Birthday flags
         Confetti
         Leaves in the wind (fall)
+        Full screen weather
 
-
-    - Occasions:
-        Wedding days
-        Aniversery
-        Is it friday?
 
     - More Scenes
-        Full screen weather
         Easter (Eggs, bunny, easterlillies)
-        Saint Patrics (Shamrocks, nome)
         Sankt Hans (Bon fire, witch)
         Mortens Aften (Ducks)
         April fools ??
+        Wedding days
+        Aniversery
+        Is it friday?
 
 
     
@@ -72,3 +68,7 @@ Done:
     - Add user configurable scenes (replace selectDateScene ) the details  specified
     - Daily/Weekly Reminders (weekend/bedtime)?
     - Christmas tree
+    - Raycaster in full display width
+    - 3D Christmaas tree (treeslice)
+    - Seperate weather and temp effect
+    - Saint Patrics (Shamrocks, gnome)

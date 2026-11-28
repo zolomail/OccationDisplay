@@ -81,6 +81,7 @@ constexpr SceneOption SCENE_OPTIONS[] = {
     { SceneId::NewYearsMidnight, "NewYearsMidnight" },
     { SceneId::JanuaryDays,      "JanuaryDays"      },
     { SceneId::ValentinesDay,    "ValentinesDay"    },
+    { SceneId::StPatricksDay,    "St. Patrick's Day"},
     { SceneId::NormalDays,       "NormalDays"       },
     { SceneId::Halloween,        "Halloween"        },
     { SceneId::Test,             "------"           },

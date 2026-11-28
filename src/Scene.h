@@ -33,6 +33,7 @@ enum class SceneId : uint8_t {
 	TrackmanTM5Beta,
 	RaycasterEffect,
 	TreeSliceEffect,
+	StPatricksDay,
 	None	// Must be last
 };
 

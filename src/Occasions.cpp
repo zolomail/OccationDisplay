@@ -28,7 +28,7 @@ OccasionEntry makeDateEntry(
     SceneId sid)
 {
     OccasionEntry e;
-    e.label       = String(label).substring(0, 16);
+    e.label       = String(label).substring(0, 24);
     e.recurring   = false;
     e.start_month = sm;
     e.start_day   = sd;
@@ -45,10 +45,11 @@ OccasionEntry makeDateEntry(
 std::vector<OccasionEntry> buildDefaultEntries()
 {
     std::vector<OccasionEntry> list;
-    list.reserve(8);
+    list.reserve(9);
     list.push_back(makeDateEntry("New Year",      1,  1, 0, 0,  1,  1, 11, 59, SceneId::NewYearsMidnight));
     list.push_back(makeDateEntry("January",       1,  1, 0, 0,  1, 31, 23, 59, SceneId::JanuaryDays));
     list.push_back(makeDateEntry("Valentines",    2, 14, 0, 0,  2, 14, 23, 59, SceneId::Aquatic));
+    list.push_back(makeDateEntry("St Patrick's Day", 3, 17, 0, 0, 3, 17, 23, 59, SceneId::StPatricksDay));
     list.push_back(makeDateEntry("Halloween",    10, 16, 0, 0, 11,  1,  7, 59, SceneId::Halloween));
     list.push_back(makeDateEntry("November Snow",11,  1, 0, 0, 11, 30, 23, 59, SceneId::JustSnow));
     list.push_back(makeDateEntry("Christmas Eve",12, 24, 0, 0, 12, 24, 23, 59, SceneId::ChristmasEve));
@@ -273,7 +274,7 @@ bool parseJsonArray(const String& json, std::vector<OccasionEntry>& out)
                 if (key == "label") {
                     String s;
                     if (!c.parseString(s)) return false;
-                    e.label = s.substring(0, 16);
+                    e.label = s.substring(0, 24);
                 } else if (key == "params") {
                     if (!c.consume('{')) return false;
                     if (!c.consume('}')) {

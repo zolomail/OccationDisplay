@@ -237,6 +237,20 @@ std::unique_ptr<Scene> createScene(SceneId id, MatrixPanel_I2S_DMA &display)
             scene->add_effect<ScrollText>(scene->text("Scroll Text", Config::DEFAULT_SCROLL), YPOS_3_QUART, -10, scene->color("Scroll Color", Colors::RED), scene->font("Scroll Font", TINY_WIDE_FONT));
             break;
 
+        case SceneId::StPatricksDay: {
+            scene->add_effect<ClearScreen>(scene->color("Background Color", Colors::BLACK));
+            const uint16_t shamrock_col1 = scene->color("Shamrock Color 1", color565(30, 220, 70));
+            const uint16_t shamrock_col2 = scene->color("Shamrock Color 2", Colors::GREEN);
+            scene->add_effect<SDFEffect>(SDF_SHAMROCK, shamrock_col1, 64, YPOS_1_QUART, 0.35f, 45.0f, -2.4f, -7, 5, 1.0f);
+            scene->add_effect<SDFEffect>(SDF_SHAMROCK, shamrock_col1, 140, YPOS_CENTER, 0.38f, 135.0f, -1.9f, -11, -3, 1.0f);
+            scene->add_effect<SDFEffect>(SDF_SHAMROCK, shamrock_col1, 170, YPOS_1_QUART, 0.42f, 200.0f, 2.2f, 8, -5, 1.0f);
+            scene->add_effect<FlyingText>(scene->text("Message", "Happy St. Patrick's Day"), XPOS_CENTER, YPOS_1_QUART, 0, 0, scene->color("Message Color", Colors::YELLOW), scene->font("Message Font", TINY_WIDE_FONT));
+            scene->add_effect<ShowTime>(current_time, XPOS_CENTER, YPOS_3_QUART, 0, 0, scene->color("Clock Color", Colors::WHITE), scene->font("Clock Font", TINY_WIDE_FONT), "yyyy-mm-dd hh:mm:ss");
+            scene->add_effect<SDFEffect>(SDF_SHAMROCK, shamrock_col2, 24, YPOS_CENTER, 0.45f, 0.0f, 1.8f, 9, 4, 1.0f);
+            scene->add_effect<SDFEffect>(SDF_SHAMROCK, shamrock_col2, 100, YPOS_3_QUART, 0.50f, 90.0f, 1.4f, 6, -6, 1.0f);
+            break;
+        }
+
         case SceneId::Object3DEffect: {
             scene->add_effect<ClearScreen>(scene->color("Background Color", Colors::BLACK));
             const uint8_t shape_idx = scene->select("Shape", 0, { "Cube", "Pyramid", "Octahedron", "Diamond", "Icosahedron", "Torus" });

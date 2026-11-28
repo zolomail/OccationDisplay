@@ -92,8 +92,8 @@ function buildScheduleFieldsHtml(o) {
               '<input type="checkbox" class="occ-wd" value="' + bit + '"' + ((o.wd & bit) ? ' checked' : '') + '>' + name + '</label>';
   }
   return '<h3>Occasion Schedule</h3>' +
-    '<div class="field"><label for="occ-label">Label (max 16 chars)</label>' +
-      '<input id="occ-label" maxlength="16" value="' + escHtml(o.label) + '"></div>' +
+    '<div class="field"><label for="occ-label">Label (max 24 chars)</label>' +
+      '<input id="occ-label" maxlength="24" value="' + escHtml(o.label) + '"></div>' +
     '<div class="field"><label>Start (Day / Month / Hour / Min)</label><div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;">' +
       '<input id="occ-sd" type="number" min="1" max="31" value="' + o.sd + '">' +
       '<input id="occ-sm" type="number" min="1" max="12" value="' + o.sm + '">' +
@@ -124,7 +124,7 @@ function readOccasionFromScenePane() {
   const params = {};
   document.querySelectorAll('#scene-fields [data-k]').forEach(el => { params[el.dataset.k] = el.value; });
   return {
-    label: (document.getElementById('occ-label').value || '').slice(0, 16) || sceneLabelById(document.getElementById('scene_id').value).slice(0, 16),
+    label: (document.getElementById('occ-label').value || '').slice(0, 24) || sceneLabelById(document.getElementById('scene_id').value).slice(0, 24),
     recurring: document.getElementById('occ-rec-en').checked ? 1 : 0,
     sm: Number(document.getElementById('occ-sm').value),
     sd: Number(document.getElementById('occ-sd').value),
@@ -156,7 +156,7 @@ function loadSceneConfig() {
       }
       const params = d.params || [];
       const draft = editingOccDraft || {
-        label: sceneLabelById(sid).slice(0, 16), recurring: 0,
+        label: sceneLabelById(sid).slice(0, 24), recurring: 0,
         sm: 1, sd: 1, sh: 0, smin: 0, em: 12, ed: 31, eh: 23, emin: 59,
         wd: 127, fh: 0, fmin: 0, th: 23, tmin: 59
       };
