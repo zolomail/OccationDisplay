@@ -1,4 +1,6 @@
 #include "Flames.h"
+#include "FastHub75.h"
+#include <algorithm>
 
 namespace {
 
@@ -65,7 +67,8 @@ Flames::Flames(Adafruit_GFX &matrix, uint8_t max_decay) :
 	m_height(m_matrix.height()),
 	m_max_decay(max_decay < 2 ? 2 : max_decay),
 	m_rng_state(micros() | 1u),
-	m_heat(m_width * m_height, 0)
+	m_heat(m_width * m_height, 0),
+	m_fb(m_width * m_height, 0)
 {
 	// Seed bottom row with maximum heat (fire source)
 	const size_t bottom_row = static_cast<size_t>(m_height - 1) * m_width;
@@ -77,6 +80,8 @@ Flames::Flames(Adafruit_GFX &matrix, uint8_t max_decay) :
 void Flames::render()
 {
 	uint32_t rng = m_rng_state;
+	std::fill(m_fb.begin(), m_fb.end(), 0);
+	uint16_t* fb = m_fb.data();
 
 	// Propagate heat upward with fast PRNG cooling and horizontal flicker
 	for (uint16_t y = 1; y < m_height; ++y) {
@@ -102,7 +107,7 @@ void Flames::render()
 				const uint8_t new_heat = (src_heat > decay) ? (src_heat - decay) : 0;
 				m_heat[dst_row + dst_x] = new_heat;
 				if (new_heat > 0) {
-					m_matrix.drawPixel(dst_x, y - 1, DOOM_PALETTE[new_heat]);
+					fb[dst_row + dst_x] = DOOM_PALETTE[new_heat];
 				}
 			}
 		}
@@ -110,6 +115,10 @@ void Flames::render()
 
 	m_rng_state = rng;
 
-	// Draw bottom source row in a single fast horizontal line
-	m_matrix.drawFastHLine(0, m_height - 1, m_width, DOOM_PALETTE[MAX_HEAT]);
+	// Fill bottom source row and blit entire frame via FastHub75
+	const size_t bottom_row = static_cast<size_t>(m_height - 1) * m_width;
+	std::fill_n(fb + bottom_row, m_width, DOOM_PALETTE[MAX_HEAT]);
+
+	auto* hub75 = static_cast<MatrixPanel_I2S_DMA*>(&m_matrix);
+	FastHub75::drawRGBBitmap(*hub75, 0, 0, fb, nullptr, m_width, m_height, false);
 }

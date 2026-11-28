@@ -25,7 +25,8 @@ private:
 	uint16_t            m_width;
 	uint16_t            m_height;
 	float               m_light_phase = 0.0f;
-	std::vector<int8_t> m_nx;
-	std::vector<int8_t> m_ny;
-	uint16_t            m_palette[256];
+	std::vector<int8_t>   m_nx;
+	std::vector<int8_t>   m_ny;
+	std::vector<uint16_t> m_fb;
+	uint16_t              m_palette[256];
 };

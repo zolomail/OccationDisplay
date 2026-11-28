@@ -29,7 +29,6 @@ enum class SceneId : uint8_t {
 	ScrollerTest,
 	TestAnimatedPng,
 	SDFTest,
-	Test5,
 	TrackmanTM5Beta,
 	RaycasterEffect,
 	TreeSliceEffect,

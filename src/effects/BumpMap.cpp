@@ -1,4 +1,5 @@
 #include "BumpMap.h"
+#include "FastHub75.h"
 #include <cmath>
 
 namespace {
@@ -189,8 +190,12 @@ void BumpMap::render()
 
 	const uint16_t w  = m_width;
 	const uint16_t h  = m_height;
+	if (m_fb.size() != static_cast<size_t>(w) * h) {
+		m_fb.resize(static_cast<size_t>(w) * h);
+	}
 	const int8_t*  nx = m_nx.data();
 	const int8_t*  ny = m_ny.data();
+	uint16_t*      fb = m_fb.data();
 
 	size_t idx = 0;
 	for (uint16_t y = 0; y < h; ++y) {
@@ -207,7 +212,10 @@ void BumpMap::render()
 				d2 = 255;
 			}
 
-			m_matrix.drawPixel(x, y, m_palette[d2]);
+			fb[idx] = m_palette[d2];
 		}
 	}
+
+	auto* hub75 = static_cast<MatrixPanel_I2S_DMA*>(&m_matrix);
+	FastHub75::drawRGBBitmap(*hub75, 0, 0, fb, nullptr, w, h, false);
 }

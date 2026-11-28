@@ -27,11 +27,19 @@ To convert pngs to SDF atlasses:
         Santa and sley
         Stars warpspace
         Water/waves seen from side (with six axis could flow)
-        Sommerday (fields trees birds)
         Birthday flags
         Confetti
-        Leaves in the wind (fall)
         Full screen weather
+            Leaves in the wind (fall)
+            Heavy rain and wind
+            lightning
+            Summerday (fields trees birds)
+            Snow
+            Hail
+            Sunny light clouds
+            Cloudy
+
+
 
 
     - More Scenes

@@ -14,6 +14,7 @@ private:
 	uint16_t             m_width;
 	uint16_t             m_height;
 	uint8_t              m_max_decay;
-	uint32_t             m_rng_state;
-	std::vector<uint8_t> m_heat;
+	uint32_t              m_rng_state;
+	std::vector<uint8_t>  m_heat;
+	std::vector<uint16_t> m_fb;
 };

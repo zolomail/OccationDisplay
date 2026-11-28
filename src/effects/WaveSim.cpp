@@ -1,4 +1,5 @@
 #include "WaveSim.h"
+#include "FastHub75.h"
 #include <cmath>
 
 namespace {
@@ -120,10 +121,15 @@ void WaveSim::render()
 		curr[row + w + 1] = curr[row + w];
 	}
 
-	// 4. Step the 2D wave equation and overdraw the entire 128x32 display in a single pass
+	// 4. Step the 2D wave equation and render into m_fb in a single pass
+	if (m_fb.size() != static_cast<size_t>(w) * h) {
+		m_fb.resize(static_cast<size_t>(w) * h);
+	}
+	uint16_t* fb = m_fb.data();
+
 	for (uint16_t y = 1; y <= h; ++y) {
 		const size_t row = static_cast<size_t>(y) * stride;
-		const int16_t py = static_cast<int16_t>(y - 1);
+		const size_t fb_row = static_cast<size_t>(y - 1) * w;
 
 		for (uint16_t x = 1; x <= w; ++x) {
 			const size_t idx = row + x;
@@ -147,14 +153,17 @@ void WaveSim::render()
 			if (pal_idx < 0)        pal_idx = 0;
 			else if (pal_idx > 255) pal_idx = 255;
 
-			m_matrix.drawPixel(static_cast<int16_t>(x - 1), py, m_palette[pal_idx]);
+			fb[fb_row + (x - 1)] = m_palette[pal_idx];
 		}
 	}
 
 	// Draw the boat / water skier highlight pixel on top of its wake
-	if (m_enable_boat && boat_x >= 0 && boat_y >= 0) {
-		m_matrix.drawPixel(boat_x, boat_y, 0xFFFF);
+	if (m_enable_boat && boat_x >= 0 && boat_x < w && boat_y >= 0 && boat_y < h) {
+		fb[static_cast<size_t>(boat_y) * w + boat_x] = 0xFFFF;
 	}
+
+	auto* hub75 = static_cast<MatrixPanel_I2S_DMA*>(&m_matrix);
+	FastHub75::drawRGBBitmap(*hub75, 0, 0, fb, nullptr, w, h, false);
 
 	// Swap buffers for the next frame
 	m_flip = !m_flip;

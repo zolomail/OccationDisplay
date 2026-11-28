@@ -22,8 +22,9 @@ private:
 	bool                 m_enable_boat;
 	float                m_boat_phase  = 0.0f;
 	uint32_t             m_rng_state;
-	std::vector<int16_t> m_buf_a;
-	std::vector<int16_t> m_buf_b;
-	bool                 m_flip        = false;
+	std::vector<int16_t>  m_buf_a;
+	std::vector<int16_t>  m_buf_b;
+	std::vector<uint16_t> m_fb;
+	bool                  m_flip        = false;
 	uint16_t             m_palette[256];
 };

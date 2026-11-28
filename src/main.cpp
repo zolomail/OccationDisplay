@@ -149,7 +149,6 @@ std::unique_ptr<Scene> createScene(SceneId id, MatrixPanel_I2S_DMA &display)
         }
 
         case SceneId::FlamingHot:
-            scene->add_effect<ClearScreen>(scene->color("Background Color", Colors::BLACK));
             scene->add_effect<Flames>(5);
             break;
 
@@ -158,10 +157,7 @@ std::unique_ptr<Scene> createScene(SceneId id, MatrixPanel_I2S_DMA &display)
             break;
 
         case SceneId::BumpMapEffect:
-            scene->add_effect<BumpMap>(
-                scene->color("Bump Color", Colors::ORANGE),
-                scene->text("Bump Text", "OCCASION"),
-                false);
+            scene->add_effect<BumpMap>( scene->color("Bump Color", Colors::ORANGE), scene->text("Bump Text", "OCCASION"), false);
             break;
 
         case SceneId::TrackmanTM5Beta:
@@ -374,12 +370,6 @@ std::unique_ptr<Scene> createScene(SceneId id, MatrixPanel_I2S_DMA &display)
             scene->add_effect<SDFEffect>(SDF_SHAMROCK, scene->color("Color Shamrock", Colors::GREEN), XPOS_CENTER, YPOS_CENTER, scale, 0.0f, spin, -5, 5, outline);
             break;
         }
-
-        case SceneId::Test5:
-            scene->add_effect<ClearScreen>(scene->color("Background Color", Colors::BLACK));
-            scene->add_effect<Border>(2, scene->color("Border Color 1", Colors::WHITE), scene->color("Border Color 2", Colors::BLACK), BorderPattern::Rainbow, 4, 3);
-            scene->add_effect<FlyingText>(scene->text("Label Text", "Test 5: Rainbow"), XPOS_CENTER, YPOS_CENTER, 0, 0, scene->color("Text Color", Colors::WHITE), scene->font("Text Font", TINY_WIDE_FONT));
-            break;
 
         case SceneId::None:
         default:
