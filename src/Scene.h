@@ -33,6 +33,7 @@ enum class SceneId : uint8_t {
 	RaycasterEffect,
 	TreeSliceEffect,
 	StPatricksDay,
+	Easter,
 	None	// Must be last
 };
 

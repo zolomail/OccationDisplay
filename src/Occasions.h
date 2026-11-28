@@ -9,6 +9,7 @@
 struct OccasionEntry {
     String label;
     bool   recurring{false};
+    bool   easter_offset{false};
 
     // DateRange (month 1..12, day 1..31, hour 0..23, min 0..59)
     uint8_t start_month{1};
@@ -19,6 +20,10 @@ struct OccasionEntry {
     uint8_t end_day{31};
     uint8_t end_hour{23};
     uint8_t end_min{59};
+
+    // Easter offset (days relative to Easter Sunday, e.g. -3 = Maundy Thursday)
+    int8_t  easter_start_days{-3};
+    int8_t  easter_end_days{1};
 
     // Reoccuring (weekdays_mask bit i = tm_wday i: 0=Sun..6=Sat)
     uint8_t weekdays_mask{0x7F};

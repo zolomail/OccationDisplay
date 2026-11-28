@@ -45,17 +45,60 @@ OccasionEntry makeDateEntry(
 std::vector<OccasionEntry> buildDefaultEntries()
 {
     std::vector<OccasionEntry> list;
-    list.reserve(9);
+    list.reserve(10);
     list.push_back(makeDateEntry("New Year",      1,  1, 0, 0,  1,  1, 11, 59, SceneId::NewYearsMidnight));
     list.push_back(makeDateEntry("January",       1,  1, 0, 0,  1, 31, 23, 59, SceneId::JanuaryDays));
     list.push_back(makeDateEntry("Valentines",    2, 14, 0, 0,  2, 14, 23, 59, SceneId::Aquatic));
     list.push_back(makeDateEntry("St Patrick's Day", 3, 17, 0, 0, 3, 17, 23, 59, SceneId::StPatricksDay));
+    {
+        OccasionEntry easter;
+        easter.label             = "Easter";
+        easter.easter_offset     = true;
+        easter.easter_start_days = -3;
+        easter.easter_end_days   = 1;
+        easter.scene_id          = SceneId::Easter;
+        list.push_back(std::move(easter));
+    }
     list.push_back(makeDateEntry("Halloween",    10, 16, 0, 0, 11,  1,  7, 59, SceneId::Halloween));
     list.push_back(makeDateEntry("November Snow",11,  1, 0, 0, 11, 30, 23, 59, SceneId::JustSnow));
     list.push_back(makeDateEntry("Christmas Eve",12, 24, 0, 0, 12, 24, 23, 59, SceneId::ChristmasEve));
     list.push_back(makeDateEntry("New Years Eve",12, 31, 0, 0, 12, 31, 23, 59, SceneId::NewYearsDay));
     list.push_back(makeDateEntry("Christmas",    12,  1, 0, 0, 12, 31, 23, 59, SceneId::ChristmasDays));
     return list;
+}
+
+void getEasterSunday(int year, uint8_t& month, uint8_t& day)
+{
+    const int a = year % 19;
+    const int b = year / 100;
+    const int c = year % 100;
+    const int d = b / 4;
+    const int e = b % 4;
+    const int f = (b + 8) / 25;
+    const int g = (b - f + 1) / 3;
+    const int h = (19 * a + b - d - g + 15) % 30;
+    const int i = c / 4;
+    const int k = c % 4;
+    const int l = (32 + 2 * e + 2 * i - h - k) % 7;
+    const int m = (a + 11 * h + 22 * l) / 451;
+    const int n = h + l - 7 * m + 114;
+    month = static_cast<uint8_t>(n / 31);
+    day   = static_cast<uint8_t>((n % 31) + 1);
+}
+
+void resolveEasterOffsetDate(int year, int8_t offset_days, uint8_t& out_month, uint8_t& out_day)
+{
+    uint8_t em = 3, ed = 21;
+    getEasterSunday(year, em, ed);
+    tm t = {};
+    t.tm_year  = year - 1900;
+    t.tm_mon   = em - 1;
+    t.tm_mday  = ed + offset_days;
+    t.tm_hour  = 12;
+    t.tm_isdst = -1;
+    mktime(&t);
+    out_month = static_cast<uint8_t>(t.tm_mon + 1);
+    out_day   = static_cast<uint8_t>(t.tm_mday);
 }
 
 uint32_t packDateTime(uint8_t m, uint8_t d, uint8_t h, uint8_t min)
@@ -73,9 +116,19 @@ bool matchesEntry(const OccasionEntry& e, const tm& t)
     const uint8_t hour  = static_cast<uint8_t>(t.tm_hour);
     const uint8_t min   = static_cast<uint8_t>(t.tm_min);
 
+    uint8_t sm = e.start_month;
+    uint8_t sd = e.start_day;
+    uint8_t em = e.end_month;
+    uint8_t ed = e.end_day;
+    if (e.easter_offset) {
+        const int year = t.tm_year + 1900;
+        resolveEasterOffsetDate(year, e.easter_start_days, sm, sd);
+        resolveEasterOffsetDate(year, e.easter_end_days, em, ed);
+    }
+
     const uint32_t cur   = packDateTime(month, day, hour, min);
-    const uint32_t start = packDateTime(e.start_month, e.start_day, e.start_hour, e.start_min);
-    const uint32_t end   = packDateTime(e.end_month, e.end_day, e.end_hour, e.end_min);
+    const uint32_t start = packDateTime(sm, sd, e.start_hour, e.start_min);
+    const uint32_t end   = packDateTime(em, ed, e.end_hour, e.end_min);
     const bool in_range = (start <= end) ? (cur >= start && cur <= end) : (cur >= start || cur <= end);
     if (!in_range) {
         return false;
@@ -123,6 +176,9 @@ String serializeEntry(const OccasionEntry& e)
     json.reserve(192);
     json += "{\"label\":\"" + jsonEsc(e.label) + "\"";
     json += ",\"recurring\":" + String(e.recurring ? 1 : 0);
+    json += ",\"easter_offset\":" + String(e.easter_offset ? 1 : 0);
+    json += ",\"esd\":" + String(e.easter_start_days);
+    json += ",\"eed\":" + String(e.easter_end_days);
     json += ",\"sm\":" + String(e.start_month);
     json += ",\"sd\":" + String(e.start_day);
     json += ",\"sh\":" + String(e.start_hour);
@@ -293,6 +349,9 @@ bool parseJsonArray(const String& json, std::vector<OccasionEntry>& out)
                         if (!c.skipValue()) return false;
                     } else {
                         if      (key == "recurring" || key == "type") e.recurring = (v == 1);
+                        else if (key == "easter_offset") e.easter_offset = (v == 1);
+                        else if (key == "esd")      e.easter_start_days = static_cast<int8_t>(std::max(-30L, std::min(60L, v)));
+                        else if (key == "eed")      e.easter_end_days   = static_cast<int8_t>(std::max(-30L, std::min(60L, v)));
                         else if (key == "sm")       e.start_month   = clampU8(v, 1, 12);
                         else if (key == "sd")       e.start_day     = clampU8(v, 1, 31);
                         else if (key == "sh")       e.start_hour    = clampU8(v, 0, 23);

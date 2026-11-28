@@ -247,6 +247,19 @@ std::unique_ptr<Scene> createScene(SceneId id, MatrixPanel_I2S_DMA &display)
             break;
         }
 
+        case SceneId::Easter:
+            scene->add_effect<ClearScreen>(scene->color("Background Color", Colors::BLACK));
+            scene->add_effect<FlyingPng>("/bitmaps/bunny.png", 0, YPOS_BOTTOM - 2, 14, 0, true, false, true);
+            for (int16_t lx = 2; lx < dma_display->width(); lx += 22) {
+                scene->add_effect<FlyingPng>("/bitmaps/daffodil.png", lx, YPOS_BOTTOM);
+            }
+            scene->add_effect<FlyingPng>("/bitmaps/egg1.png", 20, YPOS_1_QUART, 10, 6);
+            scene->add_effect<FlyingPng>("/bitmaps/egg2.png", 90, YPOS_CENTER, -12, 5);
+            scene->add_effect<FlyingPng>("/bitmaps/egg3.png", 150, YPOS_3_QUART, 8, -7);
+            scene->add_effect<FlyingText>(scene->text("Message", "Happy Easter"), XPOS_CENTER, 1, 0, 0, scene->color("Message Color", Colors::YELLOW), scene->font("Message Font", TINY_WIDE_FONT));
+            scene->add_effect<ShowTime>(current_time, XPOS_CENTER, YPOS_1_THIRD, 0, 0, scene->color("Clock Color", Colors::GREEN), scene->font("Clock Font", TINY_WIDE_FONT), "yyyy-mm-dd hh:mm:ss");
+            break;
+
         case SceneId::Object3DEffect: {
             scene->add_effect<ClearScreen>(scene->color("Background Color", Colors::BLACK));
             const uint8_t shape_idx = scene->select("Shape", 0, { "Cube", "Pyramid", "Octahedron", "Diamond", "Icosahedron", "Torus" });

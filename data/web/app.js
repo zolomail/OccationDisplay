@@ -86,6 +86,9 @@ function renderParamFields(container, params, prefix) {
 
 function buildScheduleFieldsHtml(o) {
   const isRec = Boolean(o.recurring);
+  const isEaster = Boolean(o.easter_offset);
+  const esd = (o.esd !== undefined) ? o.esd : -3;
+  const eed = (o.eed !== undefined) ? o.eed : 1;
   let wdHtml = '';
   for (const [bit, name] of WDAY_BITS) {
     wdHtml += '<label style="display:inline-flex;align-items:center;gap:4px;margin-right:8px;">' +
@@ -94,16 +97,32 @@ function buildScheduleFieldsHtml(o) {
   return '<h3>Occasion Schedule</h3>' +
     '<div class="field"><label for="occ-label">Label (max 24 chars)</label>' +
       '<input id="occ-label" maxlength="24" value="' + escHtml(o.label) + '"></div>' +
-    '<div class="field"><label>Start (Day / Month / Hour / Min)</label><div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;">' +
-      '<input id="occ-sd" type="number" min="1" max="31" value="' + o.sd + '">' +
-      '<input id="occ-sm" type="number" min="1" max="12" value="' + o.sm + '">' +
-      '<input id="occ-sh" type="number" min="0" max="23" value="' + o.sh + '">' +
-      '<input id="occ-smin" type="number" min="0" max="59" value="' + o.smin + '"></div></div>' +
-    '<div class="field"><label>End (Day / Month / Hour / Min)</label><div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;">' +
-      '<input id="occ-ed" type="number" min="1" max="31" value="' + o.ed + '">' +
-      '<input id="occ-em" type="number" min="1" max="12" value="' + o.em + '">' +
-      '<input id="occ-eh" type="number" min="0" max="23" value="' + o.eh + '">' +
-      '<input id="occ-emin" type="number" min="0" max="59" value="' + o.emin + '"></div></div>' +
+    '<label class="toggle-row" style="margin-bottom:8px;">' +
+      '<span>Offset from easter</span>' +
+      '<input type="checkbox" id="occ-easter"' + (isEaster ? ' checked' : '') + '>' +
+    '</label>' +
+    '<div id="occ-dates-fixed"' + (isEaster ? ' hidden' : '') + '>' +
+      '<div class="field"><label>Start (Day / Month / Hour / Min)</label><div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;">' +
+        '<input id="occ-sd" type="number" min="1" max="31" value="' + o.sd + '">' +
+        '<input id="occ-sm" type="number" min="1" max="12" value="' + o.sm + '">' +
+        '<input id="occ-sh" type="number" min="0" max="23" value="' + o.sh + '">' +
+        '<input id="occ-smin" type="number" min="0" max="59" value="' + o.smin + '"></div></div>' +
+      '<div class="field"><label>End (Day / Month / Hour / Min)</label><div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;">' +
+        '<input id="occ-ed" type="number" min="1" max="31" value="' + o.ed + '">' +
+        '<input id="occ-em" type="number" min="1" max="12" value="' + o.em + '">' +
+        '<input id="occ-eh" type="number" min="0" max="23" value="' + o.eh + '">' +
+        '<input id="occ-emin" type="number" min="0" max="59" value="' + o.emin + '"></div></div>' +
+    '</div>' +
+    '<div id="occ-dates-easter"' + (isEaster ? '' : ' hidden') + '>' +
+      '<div class="field"><label>Start (Easter Offset Days / Hour / Min)</label><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;">' +
+        '<input id="occ-esd" type="number" min="-30" max="60" value="' + esd + '">' +
+        '<input id="occ-esh" type="number" min="0" max="23" value="' + o.sh + '">' +
+        '<input id="occ-esmin" type="number" min="0" max="59" value="' + o.smin + '"></div></div>' +
+      '<div class="field"><label>End (Easter Offset Days / Hour / Min)</label><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;">' +
+        '<input id="occ-eed" type="number" min="-30" max="60" value="' + eed + '">' +
+        '<input id="occ-eeh" type="number" min="0" max="23" value="' + o.eh + '">' +
+        '<input id="occ-eemin" type="number" min="0" max="59" value="' + o.emin + '"></div></div>' +
+    '</div>' +
     '<label class="toggle-row" style="margin-top:8px;">' +
       '<span>Reoccuring (within date range)</span>' +
       '<input type="checkbox" id="occ-rec-en"' + (isRec ? ' checked' : '') + '>' +
@@ -123,17 +142,21 @@ function readOccasionFromScenePane() {
   document.querySelectorAll('#scene-cfg .occ-wd:checked').forEach(cb => { wd |= Number(cb.value); });
   const params = {};
   document.querySelectorAll('#scene-fields [data-k]').forEach(el => { params[el.dataset.k] = el.value; });
+  const isEaster = document.getElementById('occ-easter').checked;
   return {
     label: (document.getElementById('occ-label').value || '').slice(0, 24) || sceneLabelById(document.getElementById('scene_id').value).slice(0, 24),
     recurring: document.getElementById('occ-rec-en').checked ? 1 : 0,
+    easter_offset: isEaster ? 1 : 0,
+    esd: Number(document.getElementById('occ-esd').value),
+    eed: Number(document.getElementById('occ-eed').value),
     sm: Number(document.getElementById('occ-sm').value),
     sd: Number(document.getElementById('occ-sd').value),
-    sh: Number(document.getElementById('occ-sh').value),
-    smin: Number(document.getElementById('occ-smin').value),
+    sh: Number(document.getElementById(isEaster ? 'occ-esh' : 'occ-sh').value),
+    smin: Number(document.getElementById(isEaster ? 'occ-esmin' : 'occ-smin').value),
     em: Number(document.getElementById('occ-em').value),
     ed: Number(document.getElementById('occ-ed').value),
-    eh: Number(document.getElementById('occ-eh').value),
-    emin: Number(document.getElementById('occ-emin').value),
+    eh: Number(document.getElementById(isEaster ? 'occ-eeh' : 'occ-eh').value),
+    emin: Number(document.getElementById(isEaster ? 'occ-eemin' : 'occ-emin').value),
     wd,
     fh: Number(document.getElementById('occ-fh').value),
     fmin: Number(document.getElementById('occ-fmin').value),
@@ -176,6 +199,11 @@ function loadSceneConfig() {
         renderParamFields(document.getElementById('scene-fields'), params, 'f_');
         box.querySelectorAll('#scene-fields [data-k]').forEach(el => el.addEventListener('change', () => saveSceneConfig(false)));
       }
+      document.getElementById('occ-easter').addEventListener('change', (e) => {
+        const on = e.target.checked;
+        document.getElementById('occ-dates-fixed').hidden = on;
+        document.getElementById('occ-dates-easter').hidden = !on;
+      });
       document.getElementById('occ-rec-en').addEventListener('change', (e) => {
         document.getElementById('occ-rec').hidden = !e.target.checked;
       });
@@ -297,8 +325,14 @@ function sceneLabelById(id) {
   return opt ? opt.textContent : ('Scene ' + id);
 }
 
+function fmtEasterOffset(d) {
+  return 'Easter' + (d >= 0 ? '+' + d : String(d));
+}
+
 function occSummary(o) {
-  let s = o.sd + '/' + o.sm + ' ' + pad2(o.sh) + ':' + pad2(o.smin) + ' - ' + o.ed + '/' + o.em + ' ' + pad2(o.eh) + ':' + pad2(o.emin);
+  let s = o.easter_offset
+    ? (fmtEasterOffset(o.esd) + ' ' + pad2(o.sh) + ':' + pad2(o.smin) + ' - ' + fmtEasterOffset(o.eed) + ' ' + pad2(o.eh) + ':' + pad2(o.emin))
+    : (o.sd + '/' + o.sm + ' ' + pad2(o.sh) + ':' + pad2(o.smin) + ' - ' + o.ed + '/' + o.em + ' ' + pad2(o.eh) + ':' + pad2(o.emin));
   if (o.recurring) {
     const days = WDAY_BITS.filter(([b]) => (o.wd & b) !== 0).map(([, n]) => n).join(',');
     s += ' | ' + (days || 'None') + ' ' + pad2(o.fh) + ':' + pad2(o.fmin) + '-' + pad2(o.th) + ':' + pad2(o.tmin);
